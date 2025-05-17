@@ -1,5 +1,5 @@
 import { Text} from 'react-native';
 
-export default function podium(){
+export default function PodiumScreen(){
     return <Text>Podium</Text>;
 }
