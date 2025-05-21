@@ -1,4 +1,3 @@
-// src/data/dummy.ts
 
 import type { User, Group, Task, Completion } from './types'
 
@@ -62,10 +61,12 @@ export const DUMMY_TASKS: Task[] = [
   {
     id: 'task-1',
     title: 'Take out the trash',
-    description: 'Collect all bins and take them outside by 8pm.',
+    description: 'Collect all bins…',
     createdAt: '2025-05-10T12:00:00Z',
     groupId: 'group-1',
-    assignedTo: [DUMMY_USERS[0], DUMMY_USERS[1]], // Alice i Bob
+    assignedTo: DUMMY_USERS[1], // Bob
+    points: DUMMY_COMPLETIONS.filter(c => c.taskId === 'task-1').length * 10,
+    completed:      DUMMY_COMPLETIONS.some(c => c.taskId === 'task-1'),
     dueDate: '2025-05-22',
     frequency: 'weekly',
     completedBy: DUMMY_COMPLETIONS.filter(c => c.taskId === 'task-1'),
@@ -76,7 +77,7 @@ export const DUMMY_TASKS: Task[] = [
     description: 'Wash, dry and put away all dishes.',
     createdAt: '2025-05-12T14:30:00Z',
     groupId: 'group-1',
-    assignedTo: [DUMMY_USERS[1], DUMMY_USERS[2]], // Bob i Carol
+    assignedTo:  DUMMY_USERS[2], // Bob i Carol
     dueDate: '2025-05-21',
     frequency: 'daily',
     completedBy: DUMMY_COMPLETIONS.filter(c => c.taskId === 'task-2'),
@@ -87,7 +88,7 @@ export const DUMMY_TASKS: Task[] = [
     description: 'Vacuum under the sofa and carpets.',
     createdAt: '2025-05-14T09:45:00Z',
     groupId: 'group-1',
-    assignedTo: [DUMMY_USERS[2]], // Carol
+    assignedTo: DUMMY_USERS[2], // Carol
     dueDate: '2025-05-23',
     frequency: 'once',
     completedBy: [], // encara no s'ha marcat

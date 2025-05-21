@@ -26,11 +26,14 @@ export type Task = {
   createdAt: string
 
   groupId: string          // which group this task belongs to
-  assignedTo: User[]       // who’s responsible each time it runs
-
+  points: number;         // add this
+  completed: boolean;     // add this
+  assignedTo: User[] | null // list of users
   // scheduling info
   dueDate: string          // ISO date of next due
   frequency: 'once' | 'daily' | 'weekly' | 'monthly'
+
+ 
 
   // completion history (you can also normalize this into its own table)
   completedBy: Completion[]  
