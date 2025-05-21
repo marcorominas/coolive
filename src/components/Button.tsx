@@ -3,7 +3,7 @@ import { Pressable, Text} from 'react-native';
 export default function Button(){
     return  (
         <Pressable>
-            <Text className="text-white">Click me</Text>
+            <Text className="text-black">Click me</Text>
         </Pressable>
 
     );
