@@ -1,3 +1,4 @@
+import { AuthProvider } from "@/providers/AuthProviders";
 import "../../global.css";
 import { Slot} from 'expo-router';
 
@@ -16,7 +17,9 @@ import { Slot} from 'expo-router';
 export default function RootLayout() {
   return (
       //<ThemeProvider value={myTheme}>
+      <AuthProvider>
         <Slot />
+      </AuthProvider>
       //</ThemeProvider>
   );
 }
