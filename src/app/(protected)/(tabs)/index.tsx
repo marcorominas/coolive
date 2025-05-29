@@ -7,13 +7,16 @@ import { Link } from 'expo-router';
 
 export default function HomeScreen() {
   return (
-    <View>
-
+    
       <FlatList
         data={DUMMY_TASKS}
         renderItem={({ item }) => <TaskListItem task={item} />}
+        ListHeaderComponent={() => (
+          <Link href="/new" >
+            New Task
+          </Link>
+        )}
       />
-    </View>
         
   );
 }
