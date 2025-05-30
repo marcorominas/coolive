@@ -11,15 +11,54 @@ import {
   Keyboard,
   TouchableWithoutFeedback,
 } from 'react-native';
+import { supabase } from '@/lib/supabase'; // Adjust the import path as necessary
+import { useAuth } from '@/providers/AuthProvider'; // Adjust the import path as necessary
+
+
 
 export default function NewTaskScreen() {
+
+  const { user } = useAuth();
+
+
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [points, setPoints] = useState('0');
 
+
   const handleCreate = () => {
     // UI-only placeholder
     console.log('Creating task:', { title, description, points });
+  };
+
+  const onSubmit = async () => {
+    if(!title || !description || !points) return;
+
+    const {data, error} = await supabase
+    .from('tasks')
+    .insert({ 
+      title,
+      description,
+      points: parseInt(points, 10),
+      // completed: false,
+      // created_at: new Date().toISOString(),
+      // group_id: 'default', // Replace with actual group ID if needed
+      // //assigned_to: user?.id ? [user.id] : null, // Assign to current user if logged in
+      // due_date: new Date().toISOString(), // Set to current date for now
+      // frequency: 'once', // Default frequency, can be changed later
+      // created_by: user?.id, // Set the creator of the task 
+    });
+
+    if (error) {
+      console.error('Error creating task:', error);
+      return;
+    }
+
+    setTitle('');
+    setDescription('');
+    setPoints('');
+    //console.log('Task created successfully:', data);
+    // Reset form fields
   };
 
   return (
@@ -68,7 +107,7 @@ export default function NewTaskScreen() {
             </View>
 
             <Pressable
-              onPress={handleCreate}
+              onPress={onSubmit}
               className="bg-blue-500 rounded py-3 items-center mt-6"
             >
               <Text className="text-white font-semibold">Create Task</Text>
