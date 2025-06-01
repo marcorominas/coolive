@@ -15,36 +15,57 @@ import { supabase } from '@/lib/supabase';
 
 export default function SignupScreen() {
 
-    const router = useRouter();
+    const router = useRouter(); // eso permite navegar entre pantalles despues del signup
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
    const handleSignUp = async () => {
         if (!email || !password) {
-        Alert.alert('Please enter an email and password');
-        return;
+          Alert.alert('Please enter an email and password');
+          return;
         }
 
         try {
-        setIsLoading(true);
+          setIsLoading(true);
 
-        const {
-            data: { session },
-            error,
-        } = await supabase.auth.signUp({ email, password });
 
-        if (error) Alert.alert(error.message);
+          // creas cuenta en supabase  
+          const {
+              data: { session },
+              error,
+          } = await supabase.auth.signUp({ email, password });
 
-        if (!session)
-            Alert.alert('Please check your inbox for email verification!');
-        } catch (error) {
-        console.error('Login error:', error);
-        // TODO: Add proper error handling
+          if (error) {
+            Alert.alert('error al registrarse:', error.message);
+            setIsLoading(false);
+            return;
+          }
+          // si todo va bien, rediriges al usuario a la pantalla de crear grupo
+          router.replace('/create-group');
+          
+
+
+
+        } catch ( err: any){
+          console.error('[Signup] Error:', err.message)
+
+          Alert.alert('Error inesperado');
         } finally {
-        setIsLoading(false);
+          setIsLoading(false);
         }
-    };
+      };
+
+     
+
+
+          //   if (!session)
+          //       Alert.alert('Please check your inbox for email verification!');
+          // } catch (error) {
+          // console.error('Login error:', error);
+          // TODO: Add proper error handling
+        
+    
 
 
 

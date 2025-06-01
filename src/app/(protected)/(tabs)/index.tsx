@@ -3,17 +3,27 @@ import { FlatList, View, Pressable, Text } from 'react-native';
 import TaskListItem from '@/components/TaskListItem';
 //import { DUMMY_TASKS } from '@/dummyData';
 //import { StatusBar } from 'expo-status-bar';
-import { Link } from 'expo-router';
 import { supabase } from '@/lib/supabase'; // Adjust the import path as necessary
 import { Task } from '@/types'; // Adjust the import path as necessary
+import { Link, useRouter } from 'expo-router'; // This allows navigation between screens
 
 export default function HomeScreen() {
+  
+
+  const router = useRouter(); // This allows navigation between screens
+ 
   const [tasks, setTasks] = useState<Task[]>([]);
+
+  
+
+
+
 
   useEffect(() => {
     const fetchTasks = async () => {
       // Simulate fetching tasks from a database
-      const {data, error} = await supabase.from('tasks').select('*');
+      const {data, error} = await supabase
+        .from('tasks').select('*');
       if (error) {
         console.error('Error fetching tasks:', error);
       }
@@ -29,6 +39,18 @@ export default function HomeScreen() {
 
 
   return (
+
+    <View>
+      <View>
+        <Link href="/create-group" asChild>
+          <Pressable>
+            <Text>
+              Crear Grupo
+            </Text>
+          </Pressable>
+        </Link>
+      </View>
+    
     
       <FlatList
         data={tasks}
@@ -39,6 +61,7 @@ export default function HomeScreen() {
           </Link>
         )}
       />
+    </View>
         
   );
 }

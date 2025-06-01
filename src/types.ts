@@ -1,3 +1,4 @@
+// src/types.ts
 
 export type User = {
   id: string
@@ -10,6 +11,7 @@ export type User = {
 }
 
 // A “flat” object for a shared household / project / group
+// This is the main entity that users will interact with
 export type Group = {
   id: string
   name: string
@@ -17,6 +19,15 @@ export type Group = {
   members: User[]          // list of users in this group
   createdAt: string
 }
+// A “join” record for a user in a group    
+// This is a many-to-many relationship between User and Group
+export type GroupMember = {
+  id: string;
+  group_id: string;
+  user_id: string;
+  joined_at: string;
+};
+
 
 // The core “task” or “chore” item
 export type Task = {
@@ -40,6 +51,7 @@ export type Task = {
 }
 
 // record of a single completion
+
 export type Completion = {
   id: string
   taskId: string
