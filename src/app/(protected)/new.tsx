@@ -43,7 +43,7 @@ export default function NewTaskScreen() {
       // completed: false,
       created_at: new Date().toISOString(),
       // group_id: 'default', // Replace with actual group ID if needed
-      assigned_to: user?.id ? [user.id] : null, // Assign to current user if logged in
+      //assigned_to: user?.id ? [user.id] : null, // Assign to current user if logged in
       // due_date: new Date().toISOString(), // Set to current date for now
       // frequency: 'once', // Default frequency, can be changed later
       // created_by: user?.id, // Set the creator of the task 

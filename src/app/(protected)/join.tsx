@@ -1,12 +1,12 @@
 // join.tsx
 import React, { useEffect, useState } from 'react';
 import { View, Text, ActivityIndicator, Alert, Pressable } from 'react-native';
-import { useSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/AuthProvider';
 
 export default function JoinGroupScreen() {
-  const { groupId } = useSearchParams(); // lee ?groupId=<uuid>
+  const { groupId } = useLocalSearchParams(); // lee ?groupId=<uuid>
   const router = useRouter();
   const { user, isAuthenticated } = useAuth();
   const [loading, setLoading] = useState(true);

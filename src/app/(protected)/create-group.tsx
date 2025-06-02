@@ -33,7 +33,7 @@ export default function CreateGroupScreen() {
     // 2. Construir link de invitación (ejemplo: usando esquema deep link de Expo Router)
     //    Aquí asumo que tu app web/React Native está alojada en 'https://tu-app.app'
     const newGroupId = data.id;
-    const link = `https://coolive.app/join?groupId=${newGroupId}`;
+    const link = `my-coolive://join?groupId=${newGroupId}`;
 
     setInviteLink(link);
   };

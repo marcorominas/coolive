@@ -1,67 +1,74 @@
+// app/index.tsx
+
 import React, { useState, useEffect } from 'react';
-import { FlatList, View, Pressable, Text } from 'react-native';
+import { View, Text, TextInput, Pressable, FlatList, Alert } from 'react-native';
+import { supabase } from '@/lib/supabase';
+import { Task } from '@/types';
+import { Link, useRouter } from 'expo-router';
 import TaskListItem from '@/components/TaskListItem';
-//import { DUMMY_TASKS } from '@/dummyData';
-//import { StatusBar } from 'expo-status-bar';
-import { supabase } from '@/lib/supabase'; // Adjust the import path as necessary
-import { Task } from '@/types'; // Adjust the import path as necessary
-import { Link, useRouter } from 'expo-router'; // This allows navigation between screens
 
 export default function HomeScreen() {
-  
-
-  const router = useRouter(); // This allows navigation between screens
- 
+  const router = useRouter();
   const [tasks, setTasks] = useState<Task[]>([]);
-
-  
-
-
-
+  const [joinId, setJoinId] = useState<string>('');
 
   useEffect(() => {
     const fetchTasks = async () => {
-      // Simulate fetching tasks from a database
-      const {data, error} = await supabase
-        .from('tasks').select('*');
-      if (error) {
-        console.error('Error fetching tasks:', error);
-      }
-      setTasks(data as Task[]);
+      const { data, error } = await supabase.from('tasks').select('*');
+      if (!error && data) setTasks(data as Task[]);
     };
-
     fetchTasks();
-  }, [])
+  }, []);
 
-  console.log(JSON.stringify(tasks, null, 2)); 
-  // This will log the tasks to the console for debugging
-  // and can be removed later
-
+  const handleManualJoin = () => {
+    if (!joinId.trim()) {
+      Alert.alert('Debes pegar un groupId válido.');
+      return;
+    }
+    router.push(`/join?groupId=${joinId.trim()}`);
+  };
 
   return (
+    <View style={{ flex: 1, padding: 16 }}>
+      {/* Botón para crear grupo */}
+      <Link href="/create-group" asChild>
+        <Pressable style={{ marginBottom: 16, padding: 8, backgroundColor: '#2563EB' }}>
+          <Text style={{ color: '#fff' }}>Crear Grupo</Text>
+        </Pressable>
+      </Link>
 
-    <View>
-      <View>
-        <Link href="/create-group" asChild>
-          <Pressable>
-            <Text>
-              Crear Grupo
-            </Text>
-          </Pressable>
-        </Link>
-      </View>
-    
-    
+      {/* Campo para pegar un groupId */}
+      <Text>Pega aquí el groupId para unirte:</Text>
+      <TextInput
+        value={joinId}
+        onChangeText={setJoinId}
+        placeholder="Ej: 4832d2b8-68f2-40f0-bc8b-ebff71d91ae9"
+        autoCapitalize="none"
+        style={{
+          borderWidth: 1,
+          borderColor: '#ccc',
+          padding: 8,
+          marginTop: 8,
+          marginBottom: 8,
+        }}
+      />
+      <Pressable onPress={handleManualJoin} style={{ padding: 8, backgroundColor: '#10B981' }}>
+        <Text style={{ color: '#fff' }}>Unirme al Grupo</Text>
+      </Pressable>
+
+      {/* Lista de tareas */}
       <FlatList
         data={tasks}
+        keyExtractor={(item) => item.id}
         renderItem={({ item }) => <TaskListItem task={item} />}
         ListHeaderComponent={() => (
-          <Link href="/new" >
-            New Task
+          <Link href="/new" asChild>
+            <Pressable style={{ marginVertical: 12, padding: 8, backgroundColor: '#eee' }}>
+              <Text>New Task</Text>
+            </Pressable>
           </Link>
         )}
       />
     </View>
-        
   );
 }
