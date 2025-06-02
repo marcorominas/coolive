@@ -7,7 +7,7 @@
     "platforms": ["ios", "android", "web"],// for deeplinking: my-coolive://profile/vadim
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/logo.png",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {

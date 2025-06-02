@@ -1,74 +1,108 @@
-// app/index.tsx
+// src/app/(protected)/index.tsx
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, Pressable, FlatList, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  Image,
+  Pressable,
+  FlatList,
+  ActivityIndicator,
+  StyleSheet,
+  
+} from 'react-native';
 import { supabase } from '@/lib/supabase';
 import { Task } from '@/types';
-import { Link, useRouter } from 'expo-router';
+import { Link } from 'expo-router';
 import TaskListItem from '@/components/TaskListItem';
+import Logo from '../../../../assets/logo.png'; // Assegura’t de tenir la imatge a assets/logo.png
+//import { Asyncstorage} from 'react-native-async-storage/async-storage';
+import { useGroup } from '@/providers/GroupProvider';
 
 export default function HomeScreen() {
-  const router = useRouter();
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [joinId, setJoinId] = useState<string>('');
-
+  const [loading, setLoading] = useState(true);
+  const { currentGroupId } = useGroup();
+  
   useEffect(() => {
     const fetchTasks = async () => {
+      setLoading(true);
       const { data, error } = await supabase.from('tasks').select('*');
-      if (!error && data) setTasks(data as Task[]);
+      if (!error && data) {
+        setTasks(data as Task[]);
+      }
+      setLoading(false);
     };
     fetchTasks();
   }, []);
 
-  const handleManualJoin = () => {
-    if (!joinId.trim()) {
-      Alert.alert('Debes pegar un groupId válido.');
-      return;
-    }
-    router.push(`/join?groupId=${joinId.trim()}`);
-  };
+  if (loading) {
+    return (
+      <View className="flex-1 justify-center items-center" style={{ backgroundColor: '#D9C6A7' }}>
+        <ActivityIndicator size="large" color="#7A4A15" />
+      </View>
+    );
+  }
 
   return (
-    <View style={{ flex: 1, padding: 16 }}>
-      {/* Botón para crear grupo */}
-      <Link href="/create-group" asChild>
-        <Pressable style={{ marginBottom: 16, padding: 8, backgroundColor: '#2563EB' }}>
-          <Text style={{ color: '#fff' }}>Crear Grupo</Text>
-        </Pressable>
-      </Link>
+    <View className="flex-1" style={{ backgroundColor: '#D9C6A7' }}>
+      {/* ================= ENCABEZADO CON LOGO ================= */}
+      <View className="flex-row items-center justify-center py-4">
+        <Image source={Logo} className="w-10 h-10" resizeMode="contain" />
+        <Text className="text-2xl font-bold text-white ml-2">Colive</Text>
+      </View>
 
-      {/* Campo para pegar un groupId */}
-      <Text>Pega aquí el groupId para unirte:</Text>
-      <TextInput
-        value={joinId}
-        onChangeText={setJoinId}
-        placeholder="Ej: 4832d2b8-68f2-40f0-bc8b-ebff71d91ae9"
-        autoCapitalize="none"
-        style={{
-          borderWidth: 1,
-          borderColor: '#ccc',
-          padding: 8,
-          marginTop: 8,
-          marginBottom: 8,
-        }}
-      />
-      <Pressable onPress={handleManualJoin} style={{ padding: 8, backgroundColor: '#10B981' }}>
-        <Text style={{ color: '#fff' }}>Unirme al Grupo</Text>
-      </Pressable>
-
-      {/* Lista de tareas */}
-      <FlatList
-        data={tasks}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <TaskListItem task={item} />}
-        ListHeaderComponent={() => (
-          <Link href="/new" asChild>
-            <Pressable style={{ marginVertical: 12, padding: 8, backgroundColor: '#eee' }}>
-              <Text>New Task</Text>
+      {/* ================= BOTÓN “+ Nova Tarea” ================= */}
+      <View className="px-4">
+        {currentGroupId ? (
+          <Link href={`/new-task?groupId=${currentGroupId}`} asChild>
+            <Pressable
+              className="w-full rounded-full py-3 items-center"
+              style={{ backgroundColor: '#C09F52' }}
+            >
+              <Text className="text-white font-semibold text-lg">+ Nova Tarea</Text>
             </Pressable>
           </Link>
+        ) : (
+          <Text>Primer has d'unir-te o crear un grup per poder crear tasques.</Text>
         )}
-      />
+      </View>
+
+
+      {/* ================= LLISTA DE TASQUES ================= */}
+      {tasks.length === 0 ? (
+        <View className="flex-1 justify-center items-center">
+          <Text className="text-center text-[#7A4A15] mt-8">
+            Encara no hi ha cap tasca. Crea’n una nova!
+          </Text>
+        </View>
+      ) : (
+        <FlatList
+          data={tasks}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 12 }}
+          renderItem={({ item }) => (
+            <View className="mb-4">
+              <TaskListItem task={item}  />
+            </View>
+          )}
+        />
+      )}
     </View>
   );
 }
+
+// Si vols afegir alguna regla de StyleSheet “extra” per al TaskListItem, pots fer-ho aquí:
+const styles = StyleSheet.create({
+  taskCard: {
+    backgroundColor: '#FFFFFF',
+    borderLeftColor: '#C09F52',
+    borderLeftWidth: 4,
+    borderRadius: 8,
+    padding: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+});

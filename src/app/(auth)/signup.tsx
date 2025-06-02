@@ -42,7 +42,7 @@ export default function SignupScreen() {
             return;
           }
           // si todo va bien, rediriges al usuario a la pantalla de crear grupo
-          router.replace('/create-group');
+          router.replace('/profile-setup');
           
 
 

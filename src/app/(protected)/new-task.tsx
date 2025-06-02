@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   SafeAreaView,
   KeyboardAvoidingView,
@@ -13,17 +13,27 @@ import {
 } from 'react-native';
 import { supabase } from '@/lib/supabase'; // Adjust the import path as necessary
 import { useAuth } from '@/providers/AuthProvider'; // Adjust the import path as necessary
-
-
+import { useLocalSearchParams, useRouter } from 'expo-router'; // Adjust the import path as necessary
 
 export default function NewTaskScreen() {
 
+  const router = useRouter();
+
   const { user } = useAuth();
+
+  const { groupId } = useLocalSearchParams<{ groupId?: string }>();
+  //const { groupId } = useParams<{ groupId?: string }>(); // If using React Router
 
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [points, setPoints] = useState('0');
+
+  // Para depurar, vemos en consola quién es auth.uid() y groupId
+  useEffect(() => {
+  console.log('[new-task.tsx] groupId =', groupId);
+}, [groupId]);
+
 
 
   const handleCreate = () => {
@@ -34,32 +44,35 @@ export default function NewTaskScreen() {
   const onSubmit = async () => {
     if(!title || !description || !points) return;
 
-    const {data, error} = await supabase
+    const {data, error} =await supabase
     .from('tasks')
-    .insert({ 
-      title,
-      description,
-      points: parseInt(points, 10),
-      // completed: false,
-      created_at: new Date().toISOString(),
-      // group_id: 'default', // Replace with actual group ID if needed
-      //assigned_to: user?.id ? [user.id] : null, // Assign to current user if logged in
-      // due_date: new Date().toISOString(), // Set to current date for now
-      // frequency: 'once', // Default frequency, can be changed later
-      // created_by: user?.id, // Set the creator of the task 
+    .insert({
+      title: title.trim(),
+      group_id: groupId,       // <— igual al que existe en group_members
+      created_by: user!.id,    // <— OBLIGATORIO: auth.uid()
+      points: 1,
+      completed: false,
+      due_date: new Date().toISOString(),
+      frequency: 'once',
     });
+
 
     if (error) {
       console.error('Error creating task:', error);
       return;
     }
 
-    setTitle('');
-    setDescription('');
-    setPoints('');
+    // si todo sale bien, redirigir al indice de tareas del grupo
+    // router.push(`/groups/${groupId}/tasks`);
+    // or if you want to go back to the home screen
+    router.replace ('/')
+    // setTitle('');
+    // setDescription('');
+    // setPoints('');
     //console.log('Task created successfully:', data);
     // Reset form fields
   };
+  
 
   return (
     <SafeAreaView className="flex-1 bg-white">
