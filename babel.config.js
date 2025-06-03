@@ -1,4 +1,3 @@
-
 // babel.config.js
 
 module.exports = function (api) {
@@ -10,8 +9,16 @@ module.exports = function (api) {
       "nativewind/babel",
     ],
     plugins: [
-      
-      
+      // Plugin per carregar variables d’entorn des de .env
+      [
+        "module:react-native-dotenv",
+        {
+          moduleName: "@env",
+          path: ".env",
+          allowUndefined: false  // Si vols que peti si falta alguna variable
+        }
+      ],
+
       // Reanimated com a plugin
       "react-native-reanimated/plugin"
     ],
