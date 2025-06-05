@@ -47,8 +47,6 @@ export default function CreateGroupScreen() {
         user_id: user!.id,
       });
 
-      
-
       // 3. Guardar l’ID del grup a AsyncStorage (si vols recordar‐lo localment)
       await AsyncStorage.setItem('currentGroupId', newGroupId);
 
@@ -57,7 +55,7 @@ export default function CreateGroupScreen() {
       setInviteLink(link);
 
       // 5. Redirigir (opcional) a una altra pantalla (p.e. llista de tasques)
-      router.replace(`/new-task?groupId=${newGroupId}`);
+      //router.replace(`/new-task?groupId=${newGroupId}`);
 
     } catch (err) {
       console.error('Error inesperat crear grup:', err);
@@ -71,7 +69,7 @@ export default function CreateGroupScreen() {
     if (!inviteLink) return;
     try {
       await Share.share({
-        message: `🔗 Uneix‐te al meu grup a Colive! Pulsa aquí: ${inviteLink}`,
+        message: `Uneix‐te al meu grup a Colive! Pulsa aquí: ${inviteLink}`,
       });
     } catch (error) {
       console.error('Error compartint enllaç:', error);

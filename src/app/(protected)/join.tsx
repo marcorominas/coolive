@@ -25,6 +25,8 @@ export default function JoinGroupScreen() {
       Alert.alert('Introdueix un codi de grup vàlid.');
       return;
     }
+    console.log('joinId (trim):', joinId.trim());
+
     try {
       setLoadingJoin(true);
       // 1. Comprovar que el grup existeix
@@ -33,6 +35,7 @@ export default function JoinGroupScreen() {
         .select('id')
         .eq('id', joinId.trim())
         .single();
+      console.log('group:', group, 'groupError:', groupError);
 
       if (groupError || !group) {
         Alert.alert('Aquest grup no existeix.');
@@ -69,7 +72,7 @@ export default function JoinGroupScreen() {
         Alert.alert('No s’ha pogut unir‐te al grup.');
       } else {
         Alert.alert('✅ T’has unit al grup correctament!');
-        router.replace('/'); // o a la pantalla que vulguis
+        router.replace('/'); 
       }
     } catch (err) {
       console.error('Error inesperat al unir‐te al grup:', err);
@@ -81,9 +84,7 @@ export default function JoinGroupScreen() {
 
   return (
     <View className="flex-1 bg-beix-clar p-4">
-      <View className="flex-row items-center justify-center py-4 bg-ocre rounded-lg">
-        <Text className="text-xl font-bold text-blanc-pur">Unir‐me a un Grup</Text>
-      </View>
+      
 
       <View className="mt-6 space-y-4">
         <View>
@@ -97,6 +98,9 @@ export default function JoinGroupScreen() {
             className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-marron-fosc"
           />
         </View>
+
+        
+        
         <Pressable
           onPress={handleJoinGroup}
           className={`w-full rounded-lg py-3 items-center ${

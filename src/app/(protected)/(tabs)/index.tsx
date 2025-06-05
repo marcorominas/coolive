@@ -14,7 +14,6 @@ import { supabase } from '@/lib/supabase';
 import { Task } from '@/types';
 import { Link } from 'expo-router';
 import TaskListItem from '@/components/TaskListItem';
-import Logo from '../../../../assets/LIVE.png';
 import { useGroup } from '@/providers/GroupProvider';
 
 export default function HomeScreen() {
@@ -56,7 +55,7 @@ export default function HomeScreen() {
     <View className="flex-1" style={{ backgroundColor: '#D9C6A7' }}>
       {/* ================= ENCABEZADO ORIGINAL (logo + títol) ================= */}
       <View className="flex-row items-center justify-center py-4 bg-[#7A4A15]">
-        <Image source={Logo} className="w-10 h-10" />
+        <Image source={require('../../../../assets/LIVE.png')} className="w-10 h-10" /> 
         <Text className="text-2xl font-bold text-white ml-2">Colive</Text>
         {/* (Opcional) icona de configuració a la dreta */}
         <Pressable className="absolute right-4">
