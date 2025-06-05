@@ -1,69 +1,59 @@
+// src/components/TaskListItem.tsx
 import React from 'react';
 import type { Task } from '@/types';
-import {
-  View,
-  Text,
-  Image,
-  TouchableOpacity,
-} from 'react-native';
-import {
-  CheckCircleIcon,
-  ClockIcon,
-} from 'react-native-heroicons/outline';
-
-
-// TaskListItem component to display individual task details
+import { View, Text, Image, TouchableOpacity } from 'react-native';
+import { CheckCircleIcon, ClockIcon } from 'react-native-heroicons/outline';
 
 export default function TaskListItem({ task }: { task: Task }) {
-    // Format due date as e.g. "Mar 22"
-  const due = new Date(task.dueDate).toLocaleDateString(undefined, {
-    day:   'numeric',
+  const due = new Date(task.dueDate).toLocaleDateString('ca-ES', {
+    day: 'numeric',
     month: 'short',
   });
+
+  const assignee = task.assignedTo && task.assignedTo.length > 0 ? task.assignedTo[0] : undefined;
 
   return (
     <TouchableOpacity
       activeOpacity={0.7}
-      className="flex-row items-center justify-between bg-white rounded-lg p-4 mb-3 shadow"
+      className="flex-row items-center justify-between bg-blanc-pur rounded-xl p-4 shadow"
     >
-      {/* Left block: title, due, assignee */}
+      {/* Esquerra: info tasca */}
       <View className="flex-1 pr-2">
-        <Text className="text-lg font-semibold text-gray-900">
+        <Text className="text-lg font-semibold text-marro-fosc">
           {task.title}
         </Text>
-        <Text className="text-sm text-gray-500">
-          Due: {due}
+        <Text className="text-xs text-gray-500">
+          Fins: <Text className="text-ocre">{due}</Text>
         </Text>
         <View className="flex-row items-center mt-2">
-          {task.assignedTo ? (
+          {assignee?.image ? (
             <Image
-              source={{ uri: task.assignedTo.image }}
+              source={{ uri: assignee.image }}
               className="w-6 h-6 rounded-full mr-2"
             />
           ) : (
             <View className="w-6 h-6 rounded-full bg-gray-200 mr-2" />
           )}
-          <Text className="text-sm text-gray-700">
-            {task.assignedTo?.name ?? 'Unassigned'}
+          <Text className="text-sm text-ocre">
+            {assignee?.name ?? 'Sense assignar'}
           </Text>
         </View>
       </View>
 
-      {/* Right block: points + status icon */}
+      {/* Dreta: punts i icona estat */}
       <View className="items-end">
-        <View className="flex-row items-center bg-blue-100 px-2 py-1 rounded-full mb-2">
-          <Text className="text-blue-700 font-bold mr-1">
+        <View className="flex-row items-center bg-ocre/20 px-2 py-1 rounded-full mb-2">
+          <Text className="text-ocre font-bold mr-1">
             {task.points}
           </Text>
-          <Text className="text-xs text-blue-700">pts</Text>
+          <Text className="text-xs text-ocre">pts</Text>
         </View>
         {task.completed ? (
           <CheckCircleIcon size={28} color="#22c55e" />
         ) : (
-          <ClockIcon size={28} color="#9ca3af" />
+          <ClockIcon size={28} color="#D98C38" />
         )}
       </View>
     </TouchableOpacity>
   );
 }
-

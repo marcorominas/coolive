@@ -1,5 +1,3 @@
-// src/app/(protected)/(tabs)/profile.tsx
-
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -7,7 +5,6 @@ import {
   Image,
   Pressable,
   Alert,
-  Platform,
 } from 'react-native';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/AuthProvider';
@@ -17,6 +14,9 @@ export default function ProfileScreen() {
   const { user, isAuthenticated } = useAuth();
   const router = useRouter();
   const [signingOut, setSigningOut] = useState(false);
+  // const [groupData, setGroupData] = useState<{ 
+  //   name: string 
+  // } | null>(null);
 
   const [profileData, setProfileData] = useState<{
     full_name: string;
@@ -25,13 +25,14 @@ export default function ProfileScreen() {
     points: number;
   } | null>(null);
 
-  // 1. Redirigir si no està autenticat
+  // Si no té avatar_url, genera un per defecte amb el seu id!
+  const defaultAvatarUrl = `https://api.dicebear.com/8.x/lorelei/png?seed=${user?.id || 'random'}`;
+
   useEffect(() => {
     if (!isAuthenticated) {
       router.replace('/login');
       return;
     }
-    // 2. Carregar dades del perfil + punts
     (async () => {
       const { data, error } = await supabase
         .from('profiles')
@@ -47,14 +48,14 @@ export default function ProfileScreen() {
   }, [user, isAuthenticated]);
 
   const handleSignOut = async () => {
-      setSigningOut(true);
-      const { error } = await supabase.auth.signOut();
-      setSigningOut(false);
-      if (error) {
-        Alert.alert('Error sign out', error.message);
-        return;
-      }
-      router.replace('/login');
+    setSigningOut(true);
+    const { error } = await supabase.auth.signOut();
+    setSigningOut(false);
+    if (error) {
+      Alert.alert('Error sign out', error.message);
+      return;
+    }
+    router.replace('/login');
   };
 
   return (
@@ -62,30 +63,24 @@ export default function ProfileScreen() {
       {/* Header */}
       <View className="h-12 bg-gris-claro flex-row justify-between items-center px-4">
         <Text className="text-lg font-bold text-marron-fosc">COOLIVE</Text>
-        <Pressable onPress={() => {/* Navigar a settings si en tens */}}>
-          
+        <Pressable onPress={() => {}}>
         </Pressable>
       </View>
 
       {/* Contingut central */}
       <View className="flex-1 items-center pt-8">
         {/* Avatar */}
-        {profileData?.avatar_url ? (
+        <View className="w-48 h-48 rounded-full bg-gray-200 overflow-hidden items-center justify-center">
           <Image
-            source={{ uri: profileData.avatar_url }}
-            className="w-24 h-24 rounded-full"
+            source={{ uri: profileData?.avatar_url || defaultAvatarUrl }}
+            className="w-full h-full"
             resizeMode="cover"
           />
-        ) : (
-          <View className="w-24 h-24 rounded-full bg-gray-200 items-center justify-center">
-            <Text className="text-marron-fosc">Sense foto</Text>
-          </View>
-        )}
+        </View>
 
         {/* Nom bio i punts */}
         <Text className="mt-4 text-xl font-semibold text-marron-fosc">
           {profileData?.full_name || 'Usuari sense nom'}
-          
         </Text>
         <Text className="mt-1 text-marron-fosc">
           Punts: {profileData?.points ?? 0}
@@ -93,7 +88,9 @@ export default function ProfileScreen() {
         <Text className="mt-1 text-marron-fosc">
           {profileData?.bio || 'Sense biografia'}
         </Text>
-        
+        {/* <Text className="mt-1 text-marron-fosc">
+          {groupData?.name || 'nom del grup no disponible'}
+        </Text> */}
 
         {/* Botó Editar Perfil */}
         <Pressable
@@ -121,22 +118,17 @@ export default function ProfileScreen() {
           <Text className="text-marron-fosc text-lg">＋</Text>
         </Pressable>
 
-
         {/* Botó Sign Out */}
         <Pressable
           onPress={handleSignOut}
-          className="w-full rounded-lg py-3 items-center border border-gray-300"
+          className="mt-4 w-2/6 rounded-lg py-3 items-center bg-marro-fosc"
           disabled={signingOut}
         >
-          <Text className="text-marron-fosc font-medium">
-            {signingOut ? 'Surt...':'Sign Out'}
+          <Text className="text-blanc-pur font-medium">
+            {signingOut ? 'Surt...' : 'Sign Out'}
           </Text>
         </Pressable>
-
-
       </View>
-        
-     
     </View>
   );
 }

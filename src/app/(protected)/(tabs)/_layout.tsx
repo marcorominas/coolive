@@ -21,6 +21,16 @@ export default function TabsLayout() {
                 options={{ 
                     title: 'Tasks', 
                     tabBarIcon: ({size, color}) => (
+                        <FontAwesome5 name="home" size={size} color={color}/>
+                    ),
+                }} 
+            />
+            
+            <Tabs.Screen 
+                name='taskscalendar' 
+                options={{ 
+                    title: 'Calendar',
+                    tabBarIcon: ({size, color}) => (
                         <FontAwesome5 name="tasks" size={size} color={color}/>
                     ),
                 }} 
@@ -31,15 +41,6 @@ export default function TabsLayout() {
                     title: 'Podium', 
                     tabBarIcon: ({size, color}) => (
                         <FontAwesome5 name="medal" size={size} color={color}/>
-                    ),
-                }} 
-            />
-            <Tabs.Screen 
-                name='taskscalendar' 
-                options={{ 
-                    title: 'Calendar',
-                    tabBarIcon: ({size, color}) => (
-                        <FontAwesome5 name="calendar" size={size} color={color}/>
                     ),
                 }} 
             />

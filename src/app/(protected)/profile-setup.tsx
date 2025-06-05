@@ -12,7 +12,6 @@ import {
   Platform,
   ScrollView,
 } from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/AuthProvider';
 import { useRouter } from 'expo-router';
@@ -24,7 +23,9 @@ export default function ProfileSetupScreen() {
   const [fullName, setFullName] = useState('');
   const [bio, setBio] = useState('');
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [uploading, setUploading] = useState(false);
+
+  // Avatar random per defecte (DiceBear, sempre canvia segons user.id)
+  const defaultAvatarUrl = `https://api.dicebear.com/8.x/lorelei/png?seed=${user?.id || 'random'}`;
 
   // Redirigeix si no està autenticat
   useEffect(() => {
@@ -37,7 +38,7 @@ export default function ProfileSetupScreen() {
   useEffect(() => {
     if (user) {
       (async () => {
-        const { data, error } = await supabase
+        const { data } = await supabase
           .from('profiles')
           .select('full_name, bio, avatar_url')
           .eq('id', user.id)
@@ -50,74 +51,6 @@ export default function ProfileSetupScreen() {
       })();
     }
   }, [user]);
-
-  // Funció per triar i pujar imatge a Supabase
-  const pickImageAndUpload = async () => {
-    if (uploading) return;
-    setUploading(true);
-
-    if (!user) {
-      Alert.alert('Error: usuari no carregat.');
-      setUploading(false);
-      return;
-    }
-
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permís denegat per accedir a la galeria');
-      setUploading(false);
-      return;
-    }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      quality: 0.7,
-    });
-
-    if (result.canceled) {
-      setUploading(false);
-      return;
-    }
-
-    const asset = result.assets?.[0];
-    if (!asset) {
-      setUploading(false);
-      return;
-    }
-
-    try {
-      const mimeType = asset.mimeType || 'image/jpeg';
-      let extension = 'jpg';
-      if (mimeType === 'image/png') extension = 'png';
-      else if (mimeType === 'image/jpeg') extension = 'jpg';
-      else if (mimeType === 'image/heic') extension = 'heic';
-
-      const filename = `${user.id}/${Date.now()}.${extension}`;
-      const response = await fetch(asset.uri);
-      const blob = await response.blob();
-
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filename, blob, { contentType: mimeType, upsert: true });
-
-      if (uploadError) {
-        Alert.alert('Error pujant la imatge:', uploadError.message);
-        setUploading(false);
-        return;
-      }
-
-      const { data: publicData } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(filename);
-
-      setAvatarUrl(publicData.publicUrl);
-    } catch {
-      Alert.alert('Error inesperat pujant la imatge');
-    } finally {
-      setUploading(false);
-    }
-  };
 
   // Desa o actualitza el perfil a Supabase
   const handleSaveProfile = async () => {
@@ -143,13 +76,14 @@ export default function ProfileSetupScreen() {
         updated_at: new Date().toISOString(),
       };
       if (bio.trim() !== '') updates.bio = bio;
-      if (avatarUrl) updates.avatar_url = avatarUrl;
+      // Desa l'avatar random només si no n'hi ha cap altre (opcional)
+      updates.avatar_url = avatarUrl || defaultAvatarUrl;
 
       const { error: upsertError } = await supabase.from('profiles').upsert(updates);
       if (upsertError) {
         Alert.alert('Error desant el perfil:', upsertError.message);
       } else {
-        Alert.alert(' Perfil desat correctament!');
+        Alert.alert('Perfil desat correctament!');
         router.replace('/profile');
       }
     } catch {
@@ -172,32 +106,19 @@ export default function ProfileSetupScreen() {
 
           {/* Contingut principal */}
           <View className="p-4 space-y-6">
-            {/* Avatar */}
+            {/* AVATAR RANDOM */}
             <View className="items-center space-y-2">
-              <Pressable
-                onPress={pickImageAndUpload}
-                disabled={uploading}
-                className="w-28 h-28 rounded-full bg-gray-200 overflow-hidden items-center justify-center"
-              >
-                {avatarUrl ? (
-                  <Image
-                    source={{ uri: avatarUrl }}
-                    className="w-full h-full"
-                    resizeMode="cover"
-                  />
-                ) : (
-                  <Text className="text-marron-fosc text-center">Toca per posar foto</Text>
-                )}
-              </Pressable>
-              <Pressable
-                onPress={pickImageAndUpload}
-                className="px-4 py-2 bg-ocre rounded-lg"
-                disabled={uploading}
-              >
-                <Text className="text-blanc-pur font-medium">
-                  {uploading ? 'Pujant...' : 'Canvia Foto'}
-                </Text>
-              </Pressable>
+              <View className="w-28 h-28 rounded-full bg-gray-200 overflow-hidden items-center justify-center">
+                <Image
+                  source={{ uri: avatarUrl || defaultAvatarUrl }}
+                  className="w-full h-full"
+                  resizeMode="cover"
+                  onError={e => {
+                    console.log('Error carregant la imatge:', e.nativeEvent);
+                  }}
+                />
+              </View>
+              {/* Pots afegir aquí un botó per canviar avatar, si vols afegir més tard pujada d'imatge */}
             </View>
 
             {/* Camps de text: Nom complet i Bio */}
@@ -229,10 +150,7 @@ export default function ProfileSetupScreen() {
             {/* Botó Desa */}
             <Pressable
               onPress={handleSaveProfile}
-              className={`w-full rounded-lg py-3 items-center ${
-                uploading ? 'bg-gris-claro' : 'bg-ocre'
-              }`}
-              disabled={uploading}
+              className="w-full rounded-lg py-3 items-center bg-ocre"
             >
               <Text className="text-blanc-pur font-semibold">Desa Canvis</Text>
             </Pressable>

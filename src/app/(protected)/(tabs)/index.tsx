@@ -1,194 +1,105 @@
-// src/app/(protected)/index.tsx
-
-import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  Image,
-  Pressable,
-  FlatList,
-  ActivityIndicator,
-  StyleSheet,
-} from 'react-native';
-import { supabase } from '@/lib/supabase';
-import { Task } from '@/types';
-import { Link } from 'expo-router';
-import TaskListItem from '@/components/TaskListItem';
-import { useGroup } from '@/providers/GroupProvider';
+import React from 'react';
+import { View, Text, SafeAreaView, ScrollView, FlatList } from 'react-native';
+import TaskListItem from '@/components/TaskListItem'; // Assumint que tens aquest component
+import type { Task } from '@/types';
 
 export default function HomeScreen() {
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [loading, setLoading] = useState(true);
-  const { currentGroupId } = useGroup();
+  // Mock data
+  const groupName = 'Pis Provença';
+  const username = 'Albert';
+  const today = new Date().toLocaleDateString('ca-ES', { weekday: 'long', day: 'numeric', month: 'short' });
+  const points = 23;
 
-  // **Dades dummy d'usuari i grup** (en el futur pots substituir-ho per les dades reals)
-  const usuariNom = 'nom_user';
-  const grupNom = 'nom_grup';
-
-  // **Estat per al toggle Dia / Calendari**
-  const [modeView, setModeView] = useState<'llista' | 'calendar'>('llista');
-
-  useEffect(() => {
-    const fetchTasks = async () => {
-      setLoading(true);
-      const { data, error } = await supabase.from('tasks').select('*');
-      if (!error && data) {
-        setTasks(data as Task[]);
-      }
-      setLoading(false);
-    };
-    fetchTasks();
-  }, [currentGroupId]);
-
-  if (loading) {
-    return (
-      <View
-        className="flex-1 justify-center items-center"
-        style={{ backgroundColor: '#D9C6A7' }}
-      >
-        <ActivityIndicator size="large" color="#7A4A15" />
-      </View>
-    );
-  }
+  // Tasques mock per avui (simples, pots posar fetch a supabase si vols)
+  const tasksToday: Task[] = [
+    {
+      id: '1',
+      title: 'Treure la brossa',
+      description: '',
+      createdAt: new Date().toISOString(),
+      groupId: 'g1',
+      points: 2,
+      completed: false,
+      assignedTo: [
+        { id: 'u1', username: 'marina123', name: 'Marina', image: 'https://i.pravatar.cc/150?img=1' }
+      ],
+      dueDate: new Date().toISOString(),
+      frequency: 'once',
+      completedBy: [],
+    },
+    {
+      id: '2',
+      title: 'Netejar cuina',
+      description: '',
+      createdAt: new Date().toISOString(),
+      groupId: 'g1',
+      points: 3,
+      completed: false,
+      assignedTo: [
+        { id: 'u2', username: 'albert', name: 'Albert', image: 'https://i.pravatar.cc/150?img=2' }
+      ],
+      dueDate: new Date().toISOString(),
+      frequency: 'weekly',
+      completedBy: [],
+    },
+    // Pots afegir més mock tasks
+  ];
 
   return (
-    <View className="flex-1" style={{ backgroundColor: '#D9C6A7' }}>
-      {/* ================= ENCABEZADO ORIGINAL (logo + títol) ================= */}
-      <View className="flex-row items-center justify-center py-4 bg-[#7A4A15]">
-        <Image source={require('../../../../assets/LIVE.png')} className="w-10 h-10" /> 
-        <Text className="text-2xl font-bold text-white ml-2">Colive</Text>
-        {/* (Opcional) icona de configuració a la dreta */}
-        <Pressable className="absolute right-4">
-          <Text className="text-white text-xl">⚙️</Text>
-        </Pressable>
-      </View>
-
-      {/* ================= SECCIÓ SUPERIOR AMB FOTO, NOM, FLETXES I DIA/CALENDARI ================= */}
-      <View className="items-center mt-4 px-4">
-        <View className="flex-row items-center justify-center w-full">
-          {/* Fletxa esquerra */}
-          <Pressable
-            onPress={() => {
-              /* Aquí podries canviar la data o qualsevol lògica */
-            }}
-            className="px-4"
-          >
-            <Text className="text-2xl text-[#7A4A15]">‹</Text>
-          </Pressable>
-
-          {/* Bloc central: foto rodona + noms + toggle Dia/Calendari */}
-          <View className="items-center mx-4">
-            {/* Cercle gris per a la foto d'usuari */}
-            <View className="w-24 h-24 bg-gray-300 rounded-full" />
-
-            {/* Noms usuari i grup */}
-            <View className="flex-row items-center mt-2">
-              <Text className="text-white text-base mr-2">{usuariNom}</Text>
-              <Text className="text-white text-base">{grupNom}</Text>
-            </View>
-
-            {/* Botó Dia / Calendari */}
-            <Pressable
-              onPress={() =>
-                setModeView(modeView === 'llista' ? 'calendar' : 'llista')
-              }
-              className="mt-2 px-3 py-1 rounded-full"
-              style={{
-                backgroundColor: modeView === 'llista' ? '#C09F52' : '#7A4A15',
-              }}
-            >
-              <Text className="text-white font-medium text-sm">
-                {modeView === 'llista' ? 'Calendari' : 'Llista'}
-              </Text>
-            </Pressable>
-          </View>
-
-          {/* Fletxa dreta */}
-          <Pressable
-            onPress={() => {
-              /* Aquí podries canviar la data o qualsevol lògica */
-            }}
-            className="px-4"
-          >
-            <Text className="text-2xl text-[#7A4A15]">›</Text>
-          </Pressable>
+    <SafeAreaView className="flex-1 bg-beix-clar">
+      {/* Header */}
+      <View className="px-6 pt-8 pb-4 flex-row items-center justify-between">
+        <View>
+          <Text className="text-lg text-marro-fosc font-semibold">{groupName}</Text>
+          <Text className="text-base text-ocre">{username}</Text>
+        </View>
+        <View className="bg-ocre px-4 py-2 rounded-xl shadow">
+          <Text className="text-blanc-pur font-bold text-base">{today}</Text>
         </View>
       </View>
-
-      {/* ================= CONTINGUT PRINCIPAL: LLISTA O CALENDARI ================= */}
-      <View className="flex-1 mt-4">
-        {modeView === 'llista' ? (
-          <>
-            {/* Botó “+ Nova Tarea” (tal com ja el tenies) */}
-            <View className="px-4 mb-4">
-              {currentGroupId ? (
-                <Link href={`/new-task?groupId=${currentGroupId}`} asChild>
-                  <Pressable
-                    className="w-full rounded-full py-3 items-center"
-                    style={{ backgroundColor: '#C09F52' }}
-                  >
-                    <Text className="text-white font-semibold text-lg">
-                      + Nova Tarea
-                    </Text>
-                  </Pressable>
-                </Link>
-              ) : (
-                <Text className="text-[#7A4A15] text-center">
-                  Primer has d'unir-te o crear un grup per poder crear tasques.
-                </Text>
-              )}
-            </View>
-
-            {/* Llista de tasques (igual que abans) */}
-            {tasks.length === 0 ? (
-              <View className="flex-1 justify-center items-center">
-                <Text className="text-center text-[#7A4A15] mt-8">
-                  Encara no hi ha cap tasca. Crea’n una nova!
-                </Text>
-              </View>
-            ) : (
-              <FlatList
-                data={tasks}
-                keyExtractor={(item) => item.id}
-                contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 12 }}
-                renderItem={({ item }) => (
-                  <View className="mb-4">
-                    <TaskListItem task={item} />
-                  </View>
-                )}
-              />
-            )}
-          </>
-        ) : (
-          // **Placeholder per al calendari** (fase 2)
-          <View className="m-4 h-64 justify-center items-center bg-gray-200 rounded-lg">
-            <Text className="text-[#7A4A15]">
-              Aquí aniria el component de Calendari (fase 2)
-            </Text>
+      
+      <ScrollView className="flex-1" contentContainerStyle={{ padding: 16 }}>
+        {/* Punts i accés ràpid */}
+        <View className="bg-blanc-pur rounded-2xl shadow mb-6 px-6 py-5 flex-row items-center justify-between">
+          <View>
+            <Text className="text-marro-fosc text-lg font-bold">Punts</Text>
+            <Text className="text-3xl text-ocre font-extrabold">{points}</Text>
           </View>
-        )}
-      </View>
+          <View className="flex-row gap-2">
+            <View className="bg-ocre px-4 py-2 rounded-lg">
+              <Text className="text-blanc-pur font-semibold">Tasques</Text>
+            </View>
+            <View className="bg-ocre px-4 py-2 rounded-lg">
+              <Text className="text-blanc-pur font-semibold">Podium</Text>
+            </View>
+          </View>
+        </View>
 
-      
-      
+        {/* Nova secció: Tasques d’avui */}
+        <View className="mb-4">
+          <Text className="text-marro-fosc font-bold text-xl mb-2">Tasques d’avui</Text>
+          {tasksToday.length === 0 ? (
+            <Text className="text-gray-400 italic">No tens cap tasca avui 🎉</Text>
+          ) : (
+            <FlatList
+              data={tasksToday}
+              keyExtractor={item => item.id}
+              renderItem={({ item }) => (
+                <View className="mb-2">
+                  <TaskListItem task={item} />
+                </View>
+              )}
+              scrollEnabled={false} // no fa scroll, només mostra la llista dins el ScrollView principal
+            />
+          )}
+        </View>
 
-      
-      
-    </View>
+        {/* Espai per a pròximes funcionalitats */}
+        <View className="mt-2">
+          <Text className="text-marro-fosc text-base">Benvingut/da a la teva app de convivència 🎉</Text>
+          <Text className="text-gray-500 mt-1 text-sm">Aquí veuràs un resum de la convivència i accés ràpid a tot!</Text>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
-
-// Si vols afegir alguna regla de StyleSheet “extra” per al TaskListItem, pots fer-ho aquí:
-const styles = StyleSheet.create({
-  taskCard: {
-    backgroundColor: '#FFFFFF',
-    borderLeftColor: '#C09F52',
-    borderLeftWidth: 4,
-    borderRadius: 8,
-    padding: 12,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-});

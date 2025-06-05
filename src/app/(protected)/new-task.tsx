@@ -10,120 +10,216 @@ import {
   ScrollView,
   Keyboard,
   TouchableWithoutFeedback,
+  ActivityIndicator,
 } from 'react-native';
-import { supabase } from '@/lib/supabase'; // Adjust the import path as necessary
-import { useAuth } from '@/providers/AuthProvider'; // Adjust the import path as necessary
-import { useLocalSearchParams, useRouter } from 'expo-router'; // Adjust the import path as necessary
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/providers/AuthProvider';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+
+const frequencyOptions = [
+  { key: 'once', label: 'Un cop' },
+  { key: 'daily', label: 'Diari' },
+  { key: 'weekly', label: 'Setmanal' },
+  { key: 'monthly', label: 'Mensual' },
+];
 
 export default function NewTaskScreen() {
-
   const router = useRouter();
-
   const { user } = useAuth();
-
   const { groupId } = useLocalSearchParams<{ groupId?: string }>();
-  //const { groupId } = useParams<{ groupId?: string }>(); // If using React Router
-
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [points, setPoints] = useState('0');
+  const [points, setPoints] = useState('1');
+  const [frequency, setFrequency] = useState('once');
+  const [assignedUser, setAssignedUser] = useState<string>('');
+  const [members, setMembers] = useState<{ id: string; name: string }[]>([]);
+  const [loadingMembers, setLoadingMembers] = useState(true);
 
-  // Para depurar, vemos en consola quién es auth.uid() y groupId
+  // Carrega membres del grup
   useEffect(() => {
-  console.log('[new-task.tsx] groupId =', groupId);
-}, [groupId]);
+    const fetchMembers = async () => {
+      setLoadingMembers(true);
+      const { data, error } = await supabase
+        .from('group_members')
+        .select('user_id, users(name)')
+        .eq('group_id', groupId);
 
+      if (error) {
+        console.error(error);
+        setMembers([]);
+      } else {
+        // Si 'users' és una relació, pots agafar el nom així:
+        const membersParsed = data?.map((item: any) => ({
+          id: item.user_id,
+          name: item.users?.name ?? 'Sense nom',
+        })) ?? [];
+        setMembers(membersParsed);
+        // Assigna el primer per defecte
+        if (membersParsed.length > 0) setAssignedUser(membersParsed[0].id);
+      }
+      setLoadingMembers(false);
+    };
 
+    if (groupId) fetchMembers();
+  }, [groupId]);
 
-  const handleCreate = () => {
-    // UI-only placeholder
-    console.log('Creating task:', { title, description, points });
-  };
-
+  // Handler de creació
   const onSubmit = async () => {
-    if(!title || !description || !points) return;
+    if (!title || !description || !points || !assignedUser) return;
 
-    const {data, error} =await supabase
-    .from('tasks')
-    .insert({
-      title: title.trim(),
-      group_id: groupId,       // <— igual al que existe en group_members
-      created_by: user!.id,    // <— OBLIGATORIO: auth.uid()
-      points: 1,
-      completed: false,
-      due_date: new Date().toISOString(),
-      frequency: 'once',
-    });
-
+    const { data, error } = await supabase
+      .from('tasks')
+      .insert({
+        title: title.trim(),
+        description: description.trim(),
+        group_id: groupId,
+        created_by: user!.id,
+        points: Number(points),
+        completed: false,
+        due_date: new Date().toISOString(),
+        frequency,
+        assigned_to: assignedUser, // FK a users.id
+      });
 
     if (error) {
-      console.error('Error creating task:', error);
+      alert('Error creant tasca! ' + error.message);
       return;
     }
 
-    // si todo sale bien, redirigir al indice de tareas del grupo
-    // router.push(`/groups/${groupId}/tasks`);
-    // or if you want to go back to the home screen
-    router.replace ('/')
-    // setTitle('');
-    // setDescription('');
-    // setPoints('');
-    //console.log('Task created successfully:', data);
-    // Reset form fields
+    router.replace('/');
   };
-  
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView className="flex-1 bg-beix-clar">
       <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           className="flex-1"
         >
           <ScrollView
-            contentContainerStyle={{ padding: 16 }}
+            contentContainerStyle={{ padding: 24 }}
             keyboardShouldPersistTaps="handled"
           >
-            <Text className="text-2xl font-bold mb-4">Create New Task</Text>
-
+            <Text className="text-2xl font-bold text-marro-fosc mb-5">
+              Nova Tasca
+            </Text>
+            {/* Títol */}
             <View className="mb-4">
-              <Text className="text-sm font-medium mb-1">Title</Text>
+              <Text className="text-base font-medium mb-1 text-marro-fosc">
+                Títol
+              </Text>
               <TextInput
-                className="border border-gray-300 rounded p-2"
-                placeholder="Enter task title"
+                className="border border-ocre bg-blanc-pur rounded-xl p-3 text-marro-fosc"
+                placeholder="Ex: Escombrar menjador"
                 value={title}
                 onChangeText={setTitle}
+                maxLength={50}
               />
             </View>
-
+            {/* Descripció */}
             <View className="mb-4">
-              <Text className="text-sm font-medium mb-1">Description</Text>
+              <Text className="text-base font-medium mb-1 text-marro-fosc">
+                Descripció
+              </Text>
               <TextInput
-                className="border border-gray-300 rounded p-2 h-24"
-                placeholder="Enter task description"
+                className="border border-ocre bg-blanc-pur rounded-xl p-3 h-20 text-marro-fosc"
+                placeholder="Detalla què cal fer..."
                 value={description}
                 onChangeText={setDescription}
                 multiline
+                maxLength={120}
               />
             </View>
-
+            {/* Punts */}
             <View className="mb-4">
-              <Text className="text-sm font-medium mb-1">Points</Text>
+              <Text className="text-base font-medium mb-1 text-marro-fosc">
+                Punts
+              </Text>
               <TextInput
-                className="border border-gray-300 rounded p-2"
-                placeholder="0"
+                className="border border-ocre bg-blanc-pur rounded-xl p-3 w-24 text-marro-fosc"
+                placeholder="1"
                 keyboardType="number-pad"
                 value={points}
                 onChangeText={setPoints}
+                maxLength={2}
               />
             </View>
-
+            {/* Freqüència */}
+            <View className="mb-4">
+              <Text className="text-base font-medium mb-1 text-marro-fosc">
+                Freqüència
+              </Text>
+              <View className="flex-row gap-2">
+                {frequencyOptions.map(option => (
+                  <Pressable
+                    key={option.key}
+                    onPress={() => setFrequency(option.key)}
+                    className={`px-3 py-2 rounded-full border ${
+                      frequency === option.key
+                        ? 'bg-ocre border-ocre'
+                        : 'bg-blanc-pur border-ocre'
+                    }`}
+                  >
+                    <Text
+                      className={
+                        frequency === option.key
+                          ? 'text-blanc-pur font-semibold'
+                          : 'text-ocre'
+                      }
+                    >
+                      {option.label}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+            {/* Assignació d’usuari */}
+            {/* <View className="mb-4">
+              <Text className="text-base font-medium mb-1 text-marro-fosc">
+                Assignar a
+              </Text>
+              {loadingMembers ? (
+                <ActivityIndicator color="#D98C38" />
+              ) : (
+                <View className="flex-row flex-wrap gap-2">
+                  {members.map(u => (
+                    <Pressable
+                      key={u.id}
+                      onPress={() => setAssignedUser(u.id)}
+                      className={`px-3 py-2 rounded-full border ${
+                        assignedUser === u.id
+                          ? 'bg-ocre border-ocre'
+                          : 'bg-blanc-pur border-ocre'
+                      }`}
+                    >
+                      <Text
+                        className={
+                          assignedUser === u.id
+                            ? 'text-blanc-pur font-semibold'
+                            : 'text-ocre'
+                        }
+                      >
+                        {u.name}
+                      </Text>
+                    </Pressable>
+                  ))}
+                  {members.length === 0 && (
+                    <Text className="text-gray-400 italic">
+                      No hi ha membres al grup!
+                    </Text>
+                  )}
+                </View>
+              )}
+            </View> */}
+            {/* Botó crear */}
             <Pressable
               onPress={onSubmit}
-              className="bg-blue-500 rounded py-3 items-center mt-6"
+              className="bg-ocre rounded-xl py-3 items-center mt-8 shadow"
             >
-              <Text className="text-white font-semibold">Create Task</Text>
+              <Text className="text-blanc-pur font-semibold text-lg">
+                Crear Tasca
+              </Text>
             </Pressable>
           </ScrollView>
         </KeyboardAvoidingView>

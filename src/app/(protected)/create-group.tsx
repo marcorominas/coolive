@@ -69,7 +69,7 @@ export default function CreateGroupScreen() {
     if (!inviteLink) return;
     try {
       await Share.share({
-        message: `Uneix‐te al meu grup a Colive! Pulsa aquí: ${inviteLink}`,
+        message: `Introdueix l'ID del grup: ${inviteLink}`,
       });
     } catch (error) {
       console.error('Error compartint enllaç:', error);
