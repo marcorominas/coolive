@@ -1,90 +1,117 @@
-// join.tsx
-import React, { useEffect, useState } from 'react';
-import { View, Text, ActivityIndicator, Alert, Pressable } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+// src/app/(protected)/(tabs)/join.tsx
+
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, Pressable, Alert } from 'react-native';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/AuthProvider';
+import { useRouter } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 
 export default function JoinGroupScreen() {
-  const { groupId } = useLocalSearchParams(); // lee ?groupId=<uuid>
-  const router = useRouter();
   const { user, isAuthenticated } = useAuth();
-  const [loading, setLoading] = useState(true);
+  const router = useRouter();
+  const params = useLocalSearchParams<{ groupId?: string }>();
+  const [joinId, setJoinId] = useState(params.groupId || '');
+  const [loadingJoin, setLoadingJoin] = useState(false);
 
   useEffect(() => {
-    // Si el usuario no está autenticado, redirigimos a login
     if (!isAuthenticated) {
-      // Por ejemplo: router.replace('/login?redirectTo=/join?groupId=' + groupId)
-      router.replace({
-        pathname: '/login',
-        params: { redirectTo: `/join?groupId=${groupId}` },
-      });
+      router.replace('/login');
+    }
+  }, [isAuthenticated]);
+
+  const handleJoinGroup = async () => {
+    if (!joinId.trim()) {
+      Alert.alert('Introdueix un codi de grup vàlid.');
       return;
     }
-
-    if (!groupId || typeof groupId !== 'string') {
-      Alert.alert('Link de invitación inválido.');
-      setLoading(false);
-      return;
-    }
-
-    const joinGroup = async () => {
-      // 1. Verificar que el grupo existe
-      const { data: groupData, error: groupError } = await supabase
+    try {
+      setLoadingJoin(true);
+      // 1. Comprovar que el grup existeix
+      const { data: group, error: groupError } = await supabase
         .from('groups')
-        .select('id, name')
-        .eq('id', groupId)
+        .select('id')
+        .eq('id', joinId.trim())
         .single();
 
-      if (groupError || !groupData) {
-        Alert.alert('El grupo no existe o el link es inválido.');
-        setLoading(false);
+      if (groupError || !group) {
+        Alert.alert('Aquest grup no existeix.');
+        setLoadingJoin(false);
         return;
       }
 
-      // 2. Intentar insertar en group_members
-      const { error: insertError } = await supabase
+      // 2. Comprovar si l’usuari ja és membre (per evitar duplicats)
+      const { data: existing, error: existError } = await supabase
         .from('group_members')
-        .insert({
-          group_id: groupId,
-          user_id: user!.id,
-        });
+        .select('id')
+        .eq('group_id', joinId.trim())
+        .eq('user_id', user!.id)
+        .single();
 
-      if (insertError) {
-        // Si ya existe (p.ej. duplicado), asumimos que ya es miembro
-        if (insertError.code === '23505') {
-          // unique_violation → ya estaba en el grupo
-          console.log('Ya eres miembro de este grupo.');
-        } else {
-          Alert.alert('Error al unirte al grupo. Intenta más tarde.');
-          console.error(insertError);
-          setLoading(false);
-          return;
-        }
+      if (existError && existError.code !== 'PGRST116') {
+        console.error('Error comprovant pertinença:', existError);
+        Alert.alert('Error comprovant si ja ets membre.');
+        setLoadingJoin(false);
+        return;
       }
 
-      // 3. Éxito: redirige a la pantalla principal del grupo o a HomeScreen
-      router.replace('/'); // o router.replace(`/grupo/${groupId}`)
-    };
+      if (existing) {
+        Alert.alert('Ja ets membre d’aquest grup.');
+        setLoadingJoin(false);
+        return;
+      }
 
-    joinGroup();
-  }, [isAuthenticated]);
+      // 3. Inserir registre a 'group_members'
+      const { error: memberError } = await supabase.from('group_members').insert({
+        group_id: joinId.trim(),
+        user_id: user!.id,
+      });
 
-  if (loading) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#2563EB" />
-        <Text style={{ marginTop: 12 }}>Un poco de paciencia...</Text>
-      </View>
-    );
-  }
+      if (memberError) {
+        console.error('Error unint‐te al grup:', memberError);
+        Alert.alert('No s’ha pogut unir‐te al grup.');
+      } else {
+        Alert.alert('✅ T’has unit al grup correctament!');
+        router.replace('/'); // o a la pantalla que vulguis
+      }
+    } catch (err) {
+      console.error('Error inesperat al unir‐te al grup:', err);
+      Alert.alert('Error inesperat.');
+    } finally {
+      setLoadingJoin(false);
+    }
+  };
 
   return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-      <Text>Procesando invitación…</Text>
-      <Pressable onPress={() => router.push('/')}>
-        <Text style={{ marginTop: 8, color: 'blue' }}>Volver al inicio</Text>
-      </Pressable>
+    <View className="flex-1 bg-beix-clar p-4">
+      <View className="flex-row items-center justify-center py-4 bg-ocre rounded-lg">
+        <Text className="text-xl font-bold text-blanc-pur">Unir‐me a un Grup</Text>
+      </View>
+
+      <View className="mt-6 space-y-4">
+        <View>
+          <Text className="text-sm font-medium text-marron-fosc mb-1">Codi del Grup</Text>
+          <TextInput
+            value={joinId}
+            onChangeText={setJoinId}
+            placeholder="Ex: 4832d2b8-68f2-40f0-bc8b-ebff71d91ae9"
+            placeholderTextColor="#A08C7A"
+            autoCapitalize="none"
+            className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-marron-fosc"
+          />
+        </View>
+        <Pressable
+          onPress={handleJoinGroup}
+          className={`w-full rounded-lg py-3 items-center ${
+            loadingJoin ? 'bg-gray-400' : 'bg-marron-fosc'
+          }`}
+          disabled={loadingJoin}
+        >
+          <Text className="text-blanc-pur font-semibold">
+            {loadingJoin ? 'Procesant...' : 'Unir‐me'}
+          </Text>
+        </Pressable>
+      </View>
     </View>
   );
 }

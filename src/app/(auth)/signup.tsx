@@ -1,132 +1,119 @@
+// src/app/(auth)/signup.tsx
+
 import React, { useState } from 'react';
-import { useRouter, Link } from 'expo-router';
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  Pressable,
-  Alert,
-} from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Image, Alert } from 'react-native';
+import { Link, useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
-//import { Button, Input } from '@rneui/themed'
-
-
 
 export default function SignupScreen() {
+  const router = useRouter();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-    const router = useRouter(); // eso permite navegar entre pantalles despues del signup
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
+  const handleSignUp = async () => {
+    if (!email || !password) {
+      Alert.alert('Introdueix un email i una contrasenya');
+      return;
+    }
+    try {
+      setIsLoading(true);
+      const { data, error } = await supabase.auth.signUp({ email, password });
+      if (error) {
+        Alert.alert('Error al registrar-te:', error.message);
+      } else {
+        router.replace('/profile-setup');
+      }
+    } catch (err: any) {
+      console.error('[Signup] Error:', err.message);
+      Alert.alert('Error inesperat al registrar-te.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-   const handleSignUp = async () => {
-        if (!email || !password) {
-          Alert.alert('Please enter an email and password');
-          return;
-        }
+  const handleGoogleSignUp = async () => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({ provider: 'google' });
+      if (error) {
+        Alert.alert('Error (Google):', error.message);
+      }
+    } catch (err: any) {
+      console.error('Google SignUp Error:', err);
+      Alert.alert('Error inesperat amb Google Sign Up');
+    }
+  };
 
-        try {
-          setIsLoading(true);
+  return (
+    <View className="flex-1 bg-beix-clar items-center px-6 pt-16">
+      {/* Logo */}
+      <View className="items-center mb-12">
+        <Image
+          source={require('../../../assets/LIVE.png')}
+          className="w-36 h-36"
+          resizeMode="contain"
+        />
+      </View>
 
-
-          // creas cuenta en supabase  
-          const {
-              data: { session },
-              error,
-          } = await supabase.auth.signUp({ email, password });
-
-          if (error) {
-            Alert.alert('error al registrarse:', error.message);
-            setIsLoading(false);
-            return;
-          }
-          // si todo va bien, rediriges al usuario a la pantalla de crear grupo
-          router.replace('/profile-setup');
-          
-
-
-
-        } catch ( err: any){
-          console.error('[Signup] Error:', err.message)
-
-          Alert.alert('Error inesperado');
-        } finally {
-          setIsLoading(false);
-        }
-      };
-
-     
-
-
-          //   if (!session)
-          //       Alert.alert('Please check your inbox for email verification!');
-          // } catch (error) {
-          // console.error('Login error:', error);
-          // TODO: Add proper error handling
-        
-    
-
-
-
-
-    return (
-    <View className='flex-1 items-center justify-center bg-neutral-900 px-6'>
-      <View className='w-full max-w-sm'>
-        <Text className='text-3xl font-bold text-center mb-8 text-white'>
-          Create an account
-        </Text>
-
-        <View className='gap-4'>
-          <View>
-            <Text className='text-sm font-medium text-gray-300 mb-1'>
-              Email
-            </Text>
-            <TextInput
-              className='w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-lg text-white placeholder:text-gray-500 focus:border-blue-500'
-              placeholder='Enter your email'
-              placeholderTextColor='#6B7280'
-              keyboardType='email-address'
-              autoCapitalize='none'
-              value={email}
-              onChangeText={setEmail}
-            />
-          </View>
-
-          <View>
-            <Text className='text-sm font-medium text-gray-300 mb-1'>
-              Password
-            </Text>
-            <TextInput
-              className='w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-lg text-white placeholder:text-gray-500 focus:border-blue-500'
-              placeholder='Enter your password'
-              placeholderTextColor='#6B7280'
-              secureTextEntry
-              value={password}
-              onChangeText={setPassword}
-            />
-          </View>
-
-          <TouchableOpacity
-            className='w-full bg-white py-3 rounded-lg mt-6'
-            activeOpacity={0.8}
-            onPress={handleSignUp}
-            disabled={isLoading}
-          >
-            <Text className='text-black text-center font-semibold'>
-              {isLoading ? 'Logging in...' : 'Sign up'}
-            </Text>
-          </TouchableOpacity>
-
-          <View className='flex-row justify-center mt-4'>
-            <Text className='text-gray-400'>Already have an account? </Text>
-            <Link href='/login' asChild>
-              <Pressable>
-                <Text className='text-blue-400 font-medium'>Sign in</Text>
-              </Pressable>
-            </Link>
-          </View>
+      <View className="w-full max-w-md space-y-6">
+        <View>
+          <Text className="text-sm font-medium text-marron-fosc mb-1">Email</Text>
+          <TextInput
+            className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-marron-fosc"
+            placeholder="Enter your email"
+            placeholderTextColor="#A08C7A"
+            keyboardType="email-address"
+            autoCapitalize="none"
+            value={email}
+            onChangeText={setEmail}
+          />
         </View>
+        <View>
+          <Text className="text-sm font-medium text-marron-fosc mb-1">Password</Text>
+          <TextInput
+            className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-marron-fosc"
+            placeholder="Enter your password"
+            placeholderTextColor="#A08C7A"
+            secureTextEntry
+            value={password}
+            onChangeText={setPassword}
+          />
+        </View>
+
+        <TouchableOpacity
+          className="w-full bg-ocre py-3 rounded-lg items-center"
+          activeOpacity={0.8}
+          onPress={handleSignUp}
+          disabled={isLoading}
+        >
+          <Text className="text-blanc-pur font-semibold">
+            {isLoading ? 'Signing up...' : 'Create Account'}
+          </Text>
+        </TouchableOpacity>
+
+        <View className="flex-row justify-center">
+          <Text className="text-marron-fosc">Ja tens compte? </Text>
+          <Link href="/login" asChild>
+            <TouchableOpacity>
+              <Text className="text-ocre font-medium">Sign In</Text>
+            </TouchableOpacity>
+          </Link>
+        </View>
+
+        <Text className="text-center text-marron-fosc">OR</Text>
+
+        <TouchableOpacity
+          className="w-full bg-white border border-gray-300 flex-row items-center justify-center py-3 rounded-lg"
+          activeOpacity={0.8}
+          onPress={handleGoogleSignUp}
+        >
+          <Image
+            source={require('../../../assets/google-icon.png')}
+            className="w-6 h-6 mr-2"
+            resizeMode="contain"
+          />
+          <Text className="text-marron-fosc font-medium">Sign Up With Google</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );

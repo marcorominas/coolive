@@ -3,7 +3,7 @@
     "name": "coolive",
     "slug": "coolive",
     "scheme": "my-coolive", // uri custom qe app native usa: 
-    "hostUri": "coolive.app", //dominio version web
+    //"hostUri": "coolive.app", //dominio version web
     "platforms": ["ios", "android", "web"],// for deeplinking: my-coolive://profile/vadim
     "version": "1.0.0",
     "orientation": "portrait",
@@ -17,7 +17,10 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.tuempresa.coolive"
+      "bundleIdentifier": "com.tuempresa.coolive",
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "Necessitem accedir a la galeria per pujar la teva foto de perfil"
+      }
     },
     "android": {
       "adaptiveIcon": {

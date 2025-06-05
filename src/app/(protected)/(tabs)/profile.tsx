@@ -6,187 +6,122 @@ import {
   Text,
   Image,
   Pressable,
-  TextInput,
   Alert,
-  KeyboardAvoidingView,
   Platform,
-  ScrollView,
 } from 'react-native';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/AuthProvider';
-import { Link, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 
 export default function ProfileScreen() {
   const { user, isAuthenticated } = useAuth();
   const router = useRouter();
 
-  // ------------------------------------------------------
-  // Si l’usuari no està autenticat, redirigim a login
-  useEffect(() => {
-    if (!isAuthenticated) {
-      router.replace('/login');
-    }
-  }, [isAuthenticated]);
-
-  // ------------------------------------------------------
-  // Estat local per a mostrar el perfil (nom, username, avatar, etc.)
   const [profileData, setProfileData] = useState<{
     full_name: string;
-    username: string;
     avatar_url: string | null;
+    bio: string | null;
+    points: number;
   } | null>(null);
-  const [loadingProfile, setLoadingProfile] = useState(true);
 
-  // Estat local per al groupId manual
-  const [joinId, setJoinId] = useState<string>('');
-
+  // 1. Redirigir si no està autenticat
   useEffect(() => {
     if (!isAuthenticated) {
       router.replace('/login');
       return;
     }
-
-    // Obtenir dades del perfil
-    const fetchProfile = async () => {
-      setLoadingProfile(true);
+    // 2. Carregar dades del perfil + punts
+    (async () => {
       const { data, error } = await supabase
         .from('profiles')
-        .select('full_name, username, avatar_url')
+        .select('full_name, avatar_url, bio, points')
         .eq('id', user!.id)
         .single();
-
-      if (error) {
-        console.error('Error obtenint perfil:', error);
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error llegint perfil:', error);
       } else if (data) {
-        setProfileData({
-          full_name: data.full_name,
-          username: data.username,
-          avatar_url: data.avatar_url,
-        });
+        setProfileData(data as any);
       }
-      setLoadingProfile(false);
-    };
+    })();
+  }, [user, isAuthenticated]);
 
-    fetchProfile();
-  }, [user, isAuthenticated, router]);
-
-  // ------------------------------------------------------
-  // Funció per tancar sessió
   const handleSignOut = async () => {
     await supabase.auth.signOut();
   };
 
-  // Funció per unir-se al grup amb el joinId
-  const handleManualJoin = () => {
-    if (!joinId.trim()) {
-      Alert.alert('Si us plau, enganxa un groupId vàlid.');
-      return;
-    }
-    router.push(`/join?groupId=${joinId.trim()}`);
-  };
-
   return (
-    // 1) KeyboardAvoidingView se encarga de empujar la vista hacia arriba cuando aparece el teclado
-    <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: '#D9C6A7' }}
-      behavior={Platform.OS === 'ios' ? 'position' : 'height'}
-      keyboardVerticalOffset={Platform.select({ ios: 30, android: 40 })}
-    >
-      {/* 2) ScrollView para que, si el contenido es más alto que la pantalla (cuando el teclado está abierto), puedas desplazarte */}
-      <ScrollView
-        contentContainerStyle={{ flexGrow: 1 }}
-        keyboardShouldPersistTaps="handled"
-      >
+    <View className="flex-1 bg-beix-clar">
+      {/* Header */}
+      <View className="h-12 bg-gris-claro flex-row justify-between items-center px-4">
+        <Text className="text-lg font-bold text-marron-fosc">COOLIVE</Text>
+        <Pressable onPress={() => {/* Navigar a settings si en tens */}}>
+          
+        </Pressable>
+      </View>
 
-        <View className="flex-1 bg-[#D9C6A7]">
-          {/* ================= ENCABEZADO ================= */}
-          <View className="flex-row items-center justify-center py-6 bg-[#C09F52]">
-            <Text className="text-2xl font-bold text-white">El Meu Perfil</Text>
+      {/* Contingut central */}
+      <View className="flex-1 items-center pt-8">
+        {/* Avatar */}
+        {profileData?.avatar_url ? (
+          <Image
+            source={{ uri: profileData.avatar_url }}
+            className="w-24 h-24 rounded-full"
+            resizeMode="cover"
+          />
+        ) : (
+          <View className="w-24 h-24 rounded-full bg-gray-200 items-center justify-center">
+            <Text className="text-marron-fosc">Sense foto</Text>
           </View>
+        )}
 
-          {loadingProfile ? (
-            <View className="flex-1 justify-center items-center">
-              <Text className="text-[#7A4A15]">Carregant dades...</Text>
-            </View>
-          ) : (
-            <View className="p-6 space-y-6">
-              {/* Avatar + Nom + Username */}
-              <View className="items-center space-y-2">
-                <View className="w-28 h-28 rounded-full bg-gray-200 overflow-hidden">
-                  {profileData?.avatar_url ? (
-                    <Image
-                      source={{ uri: profileData.avatar_url }}
-                      className="w-full h-full"
-                      resizeMode="cover"
-                    />
-                  ) : (
-                    <Text className="text-[#7A4A15] text-center py-10">Sense foto</Text>
-                  )}
-                </View>
-                <Text className="text-xl font-semibold text-[#7A4A15]">
-                  {profileData?.full_name ?? 'Usuari Sense Nom'}
-                </Text>
-                <Text className="text-[#7A4A15]">
-                  @{profileData?.username ?? 'username'}
-                </Text>
-              </View>
+        {/* Nom i punts */}
+        <Text className="mt-4 text-xl font-semibold text-marron-fosc">
+          {profileData?.full_name || 'Usuari sense nom'}
+        </Text>
+        <Text className="mt-1 text-marron-fosc">
+          Punts: {profileData?.points ?? 0}
+        </Text>
 
-              {/* Botons d’accions */}
-                <View className="space-y-4">
-                  <Pressable
-                    onPress={() => router.push('/profile-setup')}
-                    className="w-full rounded-lg py-3 items-center"
-                    style={{ backgroundColor: '#C09F52' }}
-                  >
-                    <Text className="text-white font-semibold">Editar Perfil</Text>
-                  </Pressable>
+        {/* Botó Editar Perfil */}
+        <Pressable
+          onPress={() => router.push('/profile-setup')}
+          className="mt-6 w-3/4 bg-ocre py-3 rounded-lg items-center"
+        >
+          <Text className="text-blanc-pur font-medium">Editar Perfil</Text>
+        </Pressable>
 
-                  <Pressable
-                    onPress={() => router.push('/create-group')}
-                    className="w-full rounded-lg py-3 items-center"
-                    style={{ backgroundColor: '#7A4A15' }}
-                  >
-                    <Text className="text-white font-semibold">Crear Grup</Text>
-                  </Pressable>
-                </View>
+        {/* Botó Crear Grup */}
+        <Pressable
+          onPress={() => router.push('/create-group')}
+          className="mt-4 w-3/4 bg-ocre py-3 rounded-lg flex-row justify-center items-center"
+        >
+          <Text className="text-blanc-pur font-medium mr-2">Crear Grup</Text>
+          <Text className="text-blanc-pur text-lg">＋</Text>
+        </Pressable>
 
-                {/* ================= INPUT PER UNIR-SE AMB GROUPID ================= */}
-                <View className="mt-6 space-y-2">
-                  <Text className="text-sm font-medium text-[#7A4A15]">Codi del grup</Text>
-                  <TextInput
-                    value={joinId}
-                    onChangeText={setJoinId}
-                    placeholder="Ex: 4832d2b8-68f2-40f0-bc8b-ebff71d91ae9"
-                    placeholderTextColor="#7A4A15"
-                    autoCapitalize="none"
-                    className="border border-[#7A4A15] rounded px-3 py-2 bg-white text-[#7A4A15]"
-                  />
-                  <Pressable
-                    onPress={handleManualJoin}
-                    className="w-full rounded-lg py-3 items-center"
-                    style={{ backgroundColor: '#000000' }}
-                  >
-                    <Text className="text-white font-semibold">Unir-me al Grup</Text>
-                  </Pressable>
-                </View>
-              {/* ================= BOTÓ TANCAR SESSIÓ ================= */}
-                <View className="mt-8">
-                  <Pressable
-                    onPress={handleSignOut}
-                    className="w-full rounded-lg py-3 items-center"
-                    style={{
-                      backgroundColor: '#FFFFFF',
-                      borderColor: '#7A4A15',
-                      borderWidth: 1,
-                    }}
-                  >
-                    <Text className="text-[#7A4A15] font-semibold">Tancar Sessió</Text>
-                  </Pressable>
-                </View>
-              </View>
-            )}
-          </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+        {/* Botó Codi Grup (Unir‐te) */}
+        <Pressable
+          onPress={() => router.push('/join')}
+          className="mt-4 w-3/4 border-2 border-marron-fosc py-3 rounded-lg flex-row justify-between items-center px-4"
+        >
+          <Text className="text-marron-fosc font-medium">Codi Grup</Text>
+          <Text className="text-marron-fosc text-lg">＋</Text>
+        </Pressable>
+
+
+        {/* Botó Sign Out */}
+        <Pressable
+          onPress={handleSignOut}
+          className="w-full rounded-lg py-3 items-center border border-gray-300"
+        >
+          <Text className="text-marron-fosc font-medium">Sign Out</Text>
+        </Pressable>
+
+      </View>
+
+      
+        
+     
+    </View>
   );
 }
