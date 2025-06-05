@@ -22,36 +22,35 @@ export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
   const { user } = useAuth();
 
   useEffect(() => {
-    const fetchCurrentGroup = async () => {
-      if (!user) {
-        console.warn('No user found in GroupProvider.');
-        setCurrentGroupId(null);
-        return;
-      }
+  // No fem res si l'usuari encara no està carregat
+  if (!user) {
+    setCurrentGroupId(null);
+    return;
+  }
 
-      const { data, error } = await supabase
-        .from('group_members')
-        .select('group_id')
-        .eq('user_id', user.id)
-        .single();
+  const fetchCurrentGroup = async () => {
+    const { data, error } = await supabase
+      .from('group_members')
+      .select('group_id')
+      .eq('user_id', user.id)
+      .single();
 
-      if (error) {
-        console.error('Error fetching group:', error);
-        setCurrentGroupId(null);
-        return;
-      }
+    if (error) {
+      console.error('Error fetching group:', error);
+      setCurrentGroupId(null);
+      return;
+    }
 
-      if (data && data.group_id) {
-        console.log('Fetched group ID:', data.group_id);
-        setCurrentGroupId(data.group_id);
-      } else {
-        console.warn('No group found for this user.');
-        setCurrentGroupId(null);
-      }
-    };
+    if (data && data.group_id) {
+      setCurrentGroupId(data.group_id);
+    } else {
+      setCurrentGroupId(null);
+    }
+  };
 
-    fetchCurrentGroup();
-  }, [user]);
+  fetchCurrentGroup();
+}, [user]);
+
 
   return (
     <GroupContext.Provider value={{ currentGroupId, setCurrentGroupId }}>

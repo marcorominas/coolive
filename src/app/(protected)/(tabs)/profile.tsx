@@ -16,6 +16,7 @@ import { useRouter } from 'expo-router';
 export default function ProfileScreen() {
   const { user, isAuthenticated } = useAuth();
   const router = useRouter();
+  const [signingOut, setSigningOut] = useState(false);
 
   const [profileData, setProfileData] = useState<{
     full_name: string;
@@ -46,7 +47,14 @@ export default function ProfileScreen() {
   }, [user, isAuthenticated]);
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
+      setSigningOut(true);
+      const { error } = await supabase.auth.signOut();
+      setSigningOut(false);
+      if (error) {
+        Alert.alert('Error sign out', error.message);
+        return;
+      }
+      router.replace('/login');
   };
 
   return (
@@ -74,13 +82,18 @@ export default function ProfileScreen() {
           </View>
         )}
 
-        {/* Nom i punts */}
+        {/* Nom bio i punts */}
         <Text className="mt-4 text-xl font-semibold text-marron-fosc">
           {profileData?.full_name || 'Usuari sense nom'}
+          
         </Text>
         <Text className="mt-1 text-marron-fosc">
           Punts: {profileData?.points ?? 0}
         </Text>
+        <Text className="mt-1 text-marron-fosc">
+          {profileData?.bio || 'Sense biografia'}
+        </Text>
+        
 
         {/* Botó Editar Perfil */}
         <Pressable
@@ -113,13 +126,15 @@ export default function ProfileScreen() {
         <Pressable
           onPress={handleSignOut}
           className="w-full rounded-lg py-3 items-center border border-gray-300"
+          disabled={signingOut}
         >
-          <Text className="text-marron-fosc font-medium">Sign Out</Text>
+          <Text className="text-marron-fosc font-medium">
+            {signingOut ? 'Surt...':'Sign Out'}
+          </Text>
         </Pressable>
 
-      </View>
 
-      
+      </View>
         
      
     </View>

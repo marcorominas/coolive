@@ -26,14 +26,14 @@ export default function ProfileSetupScreen() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
 
-  // Si no està autenticat, anar a login
+  // Redirigeix si no està autenticat
   useEffect(() => {
     if (!isAuthenticated) {
       router.replace('/login');
     }
   }, [isAuthenticated]);
 
-  // Carrega dades existents
+  // Carrega dades existents de l'usuari
   useEffect(() => {
     if (user) {
       (async () => {
@@ -42,9 +42,7 @@ export default function ProfileSetupScreen() {
           .select('full_name, bio, avatar_url')
           .eq('id', user.id)
           .single();
-        if (error && error.code !== 'PGRST116') {
-          console.error('Error carregant perfil:', error);
-        } else if (data) {
+        if (data) {
           setFullName(data.full_name || '');
           setBio(data.bio || '');
           setAvatarUrl(data.avatar_url);
@@ -53,13 +51,10 @@ export default function ProfileSetupScreen() {
     }
   }, [user]);
 
-  // Funció per triar imatge i pujar-la a Supabase
+  // Funció per triar i pujar imatge a Supabase
   const pickImageAndUpload = async () => {
-    // Si ja està en procés, sortim
     if (uploading) return;
     setUploading(true);
-
-    console.log('📌 pickImageAndUpload invocat');
 
     if (!user) {
       Alert.alert('Error: usuari no carregat.');
@@ -67,69 +62,64 @@ export default function ProfileSetupScreen() {
       return;
     }
 
-    // 1) Demanar permisos
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    console.log('ImagePicker permissions status:', status);
     if (status !== 'granted') {
       Alert.alert('Permís denegat per accedir a la galeria');
       setUploading(false);
       return;
     }
 
-    // 2) Obrir selector d’imatges
-    console.log('⏳Obrint ImagePicker...');
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images'],
       allowsEditing: true,
       quality: 0.7,
     });
-    console.log('Result ImagePicker:', result);
 
-    if (result.canceled || result.assets.length === 0) {
-      console.log('⏹ No s’ha seleccionat cap imatge');
+    if (result.canceled) {
+      setUploading(false);
+      return;
+    }
+
+    const asset = result.assets?.[0];
+    if (!asset) {
       setUploading(false);
       return;
     }
 
     try {
-      // 3) URI local
-      const localUri = result.assets[0].uri;
-      console.log('Local URI triada:', localUri);
+      const mimeType = asset.mimeType || 'image/jpeg';
+      let extension = 'jpg';
+      if (mimeType === 'image/png') extension = 'png';
+      else if (mimeType === 'image/jpeg') extension = 'jpg';
+      else if (mimeType === 'image/heic') extension = 'heic';
 
-      // 4) Fetch → Blob
-      const response = await fetch(localUri);
-      console.log('Fetch status:', response.status, 'ok?', response.ok);
+      const filename = `${user.id}/${Date.now()}.${extension}`;
+      const response = await fetch(asset.uri);
       const blob = await response.blob();
 
-      // 5) Generar nom de fitxer
-      const filename = `${user.id}/${Date.now()}.jpg`;
-      console.log('✍️ Pujo fitxer com a:', filename);
-
-      // 6) Upload a Supabase
       const { error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(filename, blob, { contentType: 'image/jpeg' });
-      console.log('Upload Error (si n’hi ha):', uploadError);
+        .upload(filename, blob, { contentType: mimeType, upsert: true });
+
       if (uploadError) {
         Alert.alert('Error pujant la imatge:', uploadError.message);
+        setUploading(false);
         return;
       }
 
-      // 7) Get publicUrl
       const { data: publicData } = supabase.storage
         .from('avatars')
         .getPublicUrl(filename);
-      console.log('✅ Public URL obtinguda:', publicData.publicUrl);
+
       setAvatarUrl(publicData.publicUrl);
-    } catch (err) {
-      console.error('🔥 Error inesperat pujant imatge:', err);
+    } catch {
       Alert.alert('Error inesperat pujant la imatge');
     } finally {
       setUploading(false);
     }
   };
 
-  // Funció per desar/upsert del perfil
+  // Desa o actualitza el perfil a Supabase
   const handleSaveProfile = async () => {
     if (!fullName.trim()) {
       Alert.alert('El camp “Nom complet” és obligatori');
@@ -158,13 +148,11 @@ export default function ProfileSetupScreen() {
       const { error: upsertError } = await supabase.from('profiles').upsert(updates);
       if (upsertError) {
         Alert.alert('Error desant el perfil:', upsertError.message);
-        console.error('Upsert profile error:', upsertError);
       } else {
-        Alert.alert('🔔 Perfil desat correctament!');
+        Alert.alert(' Perfil desat correctament!');
         router.replace('/profile');
       }
-    } catch (err) {
-      console.error('Error inesperat guardant perfil:', err);
+    } catch {
       Alert.alert('Error inesperat guardant el perfil');
     }
   };
@@ -184,7 +172,7 @@ export default function ProfileSetupScreen() {
 
           {/* Contingut principal */}
           <View className="p-4 space-y-6">
-            {/* Avatar (rodona clicable) */}
+            {/* Avatar */}
             <View className="items-center space-y-2">
               <Pressable
                 onPress={pickImageAndUpload}
@@ -201,8 +189,6 @@ export default function ProfileSetupScreen() {
                   <Text className="text-marron-fosc text-center">Toca per posar foto</Text>
                 )}
               </Pressable>
-
-              {/* Botó de text (opcional) */}
               <Pressable
                 onPress={pickImageAndUpload}
                 className="px-4 py-2 bg-ocre rounded-lg"

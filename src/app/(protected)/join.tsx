@@ -48,12 +48,7 @@ export default function JoinGroupScreen() {
         .eq('user_id', user!.id)
         .single();
 
-      if (existError && existError.code !== 'PGRST116') {
-        console.error('Error comprovant pertinença:', existError);
-        Alert.alert('Error comprovant si ja ets membre.');
-        setLoadingJoin(false);
-        return;
-      }
+      
 
       if (existing) {
         Alert.alert('Ja ets membre d’aquest grup.');
@@ -62,7 +57,9 @@ export default function JoinGroupScreen() {
       }
 
       // 3. Inserir registre a 'group_members'
-      const { error: memberError } = await supabase.from('group_members').insert({
+      const { error: memberError } = await supabase
+      .from('group_members')
+      .insert({
         group_id: joinId.trim(),
         user_id: user!.id,
       });

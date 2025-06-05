@@ -42,17 +42,12 @@ export default function CreateGroupScreen() {
       const newGroupId = data.id;
 
       // 2. Inserir a 'group_members' per afegir l’usuari com a membre inicial
-      const { error: memberError } = await supabase.from('group_members').insert({
+      await supabase.from('group_members').insert({
         group_id: newGroupId,
         user_id: user!.id,
       });
 
-      if (memberError) {
-        console.error('Error afegint‐se al grup:', memberError);
-        Alert.alert('Error unint‐te al grup.');
-        setLoading(false);
-        return;
-      }
+      
 
       // 3. Guardar l’ID del grup a AsyncStorage (si vols recordar‐lo localment)
       await AsyncStorage.setItem('currentGroupId', newGroupId);
