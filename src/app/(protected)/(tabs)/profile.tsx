@@ -9,15 +9,13 @@ import {
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/AuthProvider';
 import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function ProfileScreen() {
   const { user, isAuthenticated } = useAuth();
   const router = useRouter();
   const [signingOut, setSigningOut] = useState(false);
-  // const [groupData, setGroupData] = useState<{ 
-  //   name: string 
-  // } | null>(null);
-
+ 
   const [profileData, setProfileData] = useState<{
     full_name: string;
     avatar_url: string | null;
@@ -27,6 +25,12 @@ export default function ProfileScreen() {
 
   // Si no té avatar_url, genera un per defecte amb el seu id!
   const defaultAvatarUrl = `https://api.dicebear.com/8.x/lorelei/png?seed=${user?.id || 'random'}`;
+
+  const [groupData, setGroupData] = useState<{
+    name: string;
+    id: string} | null>(null);
+  const [loadingGroup, setLoadingGroup] = useState(true);
+
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -45,6 +49,39 @@ export default function ProfileScreen() {
         setProfileData(data as any);
       }
     })();
+  }, [user, isAuthenticated]);
+
+
+   // Carrega les dades del grup actual de l'usuari
+  useEffect(() => {
+    const fetchGroupData = async () => {
+      setLoadingGroup(true);
+      try {
+        const groupId = await AsyncStorage.getItem('currentGroupId');
+        if (!groupId) {
+          setGroupData(null);
+          setLoadingGroup(false);
+          return;
+        }
+        const { data, error } = await supabase
+          .from('groups')
+          .select('id, name')
+          .eq('id', groupId)
+          .single();
+        if (error) {
+          setGroupData(null);
+          console.error('Error carregant el grup:', error);
+        } else if (data) {
+          setGroupData(data);
+        }
+      } catch (err) {
+        setGroupData(null);
+        console.error('Error inesperat carregant grup:', err);
+      } finally {
+        setLoadingGroup(false);
+      }
+    };
+    if (isAuthenticated) fetchGroupData();
   }, [user, isAuthenticated]);
 
   const handleSignOut = async () => {
@@ -88,9 +125,20 @@ export default function ProfileScreen() {
         <Text className="mt-1 text-marron-fosc">
           {profileData?.bio || 'Sense biografia'}
         </Text>
-        {/* <Text className="mt-1 text-marron-fosc">
-          {groupData?.name || 'nom del grup no disponible'}
-        </Text> */}
+        {/* Mostra el grup actual */}
+        <View className="mt-6 items-center">
+          {loadingGroup ? (
+            <Text className="text-marron-fosc">Carregant grup...</Text>
+          ) : groupData ? (
+            <>
+              <Text className="text-marron-fosc font-bold">Grup actual:</Text>
+              <Text className="text-marron-fosc">Nom: {groupData.name}</Text>
+              <Text className="text-marron-fosc">ID: {groupData.id}</Text>
+            </>
+          ) : (
+            <Text className="text-marron-fosc">No estàs en cap grup.</Text>
+          )}
+        </View>
 
         {/* Botó Editar Perfil */}
         <Pressable

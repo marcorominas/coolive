@@ -47,10 +47,10 @@ export default function CreateGroupScreen() {
         user_id: user!.id,
       });
 
-      // 3. Guardar l’ID del grup a AsyncStorage (si vols recordar‐lo localment)
+      // 3. Guardar l’ID del grup a AsyncStorage - recordar local
       await AsyncStorage.setItem('currentGroupId', newGroupId);
 
-      // 4. Construir deep link d’invitació
+      // 4. Deep link d’invitació
       const link = `my-coolive://join?groupId=${newGroupId}`;
       setInviteLink(link);
 
@@ -99,12 +99,12 @@ export default function CreateGroupScreen() {
       </Pressable>
 
       {/* Ometre creació de grup */}
-      <Pressable
+      {/* <Pressable
         onPress={() => router.replace('/')}
         className="mt-2 items-center"
       >
         <Text className="text-marron-fosc">Omitir creació de grup</Text>
-      </Pressable>
+      </Pressable> */}
 
       {inviteLink && (
         <View className="mt-6">

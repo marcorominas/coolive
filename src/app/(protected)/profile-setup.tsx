@@ -11,6 +11,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  TouchableOpacity,
 } from 'react-native';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/AuthProvider';
@@ -20,12 +21,15 @@ export default function ProfileSetupScreen() {
   const { user, isAuthenticated } = useAuth();
   const router = useRouter();
 
+  const [seed, setSeed] = useState(Math.random().toString(36).substring(7));
+
   const [fullName, setFullName] = useState('');
   const [bio, setBio] = useState('');
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [points, setPoints] = useState(0);
 
   // Avatar random per defecte (DiceBear, sempre canvia segons user.id)
-  const defaultAvatarUrl = `https://api.dicebear.com/8.x/lorelei/png?seed=${user?.id || 'random'}`;
+  const defaultAvatarUrl = `https://api.dicebear.com/8.x/lorelei/png?seed=${seed}`;
 
   // Redirigeix si no està autenticat
   useEffect(() => {
@@ -40,13 +44,14 @@ export default function ProfileSetupScreen() {
       (async () => {
         const { data } = await supabase
           .from('profiles')
-          .select('full_name, bio, avatar_url')
+          .select('full_name, bio, avatar_url, points')
           .eq('id', user.id)
           .single();
         if (data) {
           setFullName(data.full_name || '');
           setBio(data.bio || '');
           setAvatarUrl(data.avatar_url);
+          setPoints(data.points || 0);
         }
       })();
     }
@@ -91,9 +96,17 @@ export default function ProfileSetupScreen() {
     }
   };
 
+    // Funció per canviar l’avatar
+  const handleRandomAvatar = () => {
+    const newSeed = Math.random().toString(36).substring(7);
+    setSeed(newSeed);
+    setAvatarUrl(''); // buidem per assegurar que canvia
+  };
+
+
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: '#F5F1E9' }}
+      style={{ flex: 1, backgroundColor: 'beix-clar' }}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={Platform.select({ ios: 30, android: 40 })}
     >
@@ -107,19 +120,20 @@ export default function ProfileSetupScreen() {
           {/* Contingut principal */}
           <View className="p-4 space-y-6">
             {/* AVATAR RANDOM */}
-            <View className="items-center space-y-2">
-              <View className="w-28 h-28 rounded-full bg-gray-200 overflow-hidden items-center justify-center">
-                <Image
-                  source={{ uri: avatarUrl || defaultAvatarUrl }}
-                  className="w-full h-full"
-                  resizeMode="cover"
-                  onError={e => {
-                    console.log('Error carregant la imatge:', e.nativeEvent);
-                  }}
-                />
-              </View>
-              {/* Pots afegir aquí un botó per canviar avatar, si vols afegir més tard pujada d'imatge */}
-            </View>
+              <TouchableOpacity onPress={handleRandomAvatar} className="items-center">
+                <Text className="text-sm text-marron-fosc mb-1">Canvia Avatar</Text>
+                  <View className="w-28 h-28 rounded-full bg-gray-200 overflow-hidden items-center justify-center">
+                    <Image
+                      source={{ uri: avatarUrl || defaultAvatarUrl }}
+                      className="w-full h-full"
+                      resizeMode="cover"
+                      onError={e => {
+                        console.log('Error carregant la imatge:', e.nativeEvent);
+                      }}
+                    />
+                  </View>
+              </TouchableOpacity>
+            
 
             {/* Camps de text: Nom complet i Bio */}
             <View className="space-y-4">
@@ -133,7 +147,7 @@ export default function ProfileSetupScreen() {
                   className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-marron-fosc"
                 />
               </View>
-              <View>
+              <View >
                 <Text className="text-sm font-medium text-marron-fosc mb-1">Bio</Text>
                 <TextInput
                   value={bio}
@@ -145,12 +159,13 @@ export default function ProfileSetupScreen() {
                   className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-marron-fosc"
                 />
               </View>
+              
             </View>
 
             {/* Botó Desa */}
             <Pressable
               onPress={handleSaveProfile}
-              className="w-full rounded-lg py-3 items-center bg-ocre"
+              className="w-full rounded-lg py-3 items-center mt-4 bg-ocre"
             >
               <Text className="text-blanc-pur font-semibold">Desa Canvis</Text>
             </Pressable>
