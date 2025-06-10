@@ -1,64 +1,90 @@
-import React, { useState } from 'react';
-import { View, Text, SafeAreaView, Pressable, FlatList, SectionList } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, SafeAreaView, Pressable, FlatList, SectionList, ActivityIndicator } from 'react-native';
 import TaskListItem from '@/components/TaskListItem';
-import { useRouter } from 'expo-router';
-import type { Task } from '@/types';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { supabase } from '@/lib/supabase';
+import type { Task, User } from '@/types';
 
 const weekDays = [
   'Dilluns', 'Dimarts', 'Dimecres', 'Dijous', 'Divendres', 'Dissabte', 'Diumenge'
 ];
 
 function groupTasksByDay(tasks: Task[]) {
-  // Mock: agrupa per dia de la setmana (pots millorar amb date-fns o similar)
-  const sections = weekDays.map(day => ({
+  return weekDays.map(day => ({
     title: day,
     data: tasks.filter(task =>
       new Date(task.dueDate).toLocaleDateString('ca-ES', { weekday: 'long' }) === day.toLowerCase()
     ),
   })).filter(section => section.data.length > 0);
-  return sections;
 }
 
 export default function TaskCalendar() {
   const router = useRouter();
+  const { groupId } = useLocalSearchParams<{ groupId?: string }>();
 
-  // Mock data (pots fer fetch a Supabase aquí en comptes d'aquest array)
-  const tasks: Task[] = [
-    {
-      id: '1',
-      title: 'Treure la brossa',
-      description: '',
-      createdAt: new Date().toISOString(),
-      groupId: 'g1',
-      points: 2,
-      completed: false,
-      assignedTo: [
-        { id: 'u1', username: 'marina123', name: 'Marina', image: 'https://i.pravatar.cc/150?img=1' }
-      ],
-      dueDate: new Date().toISOString(),
-      frequency: 'once',
-      completedBy: []
-    },
-    {
-      id: '2',
-      title: 'Netejar cuina',
-      description: '',
-      createdAt: new Date().toISOString(),
-      groupId: 'g1',
-      points: 3,
-      completed: true,
-      assignedTo: [
-        { id: 'u2', username: 'albert', name: 'Albert', image: 'https://i.pravatar.cc/150?img=2' }
-      ],
-      dueDate: new Date(Date.now() + 86400000 * 2).toISOString(),
-      frequency: 'weekly',
-      completedBy: []
-    },
-    // ... més tasques
-  ];
-
-  // Toggle state
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [loading, setLoading] = useState(true);
   const [view, setView] = useState<'today' | 'week'>('today');
+
+  useEffect(() => {
+    if (!groupId) return;
+
+    // Fetch de totes les tasques + usuaris assignats
+    const fetchTasks = async () => {
+      setLoading(true);
+
+      // 1. Agafem les tasques del grup
+      const { data: tasksData, error: tasksError } = await supabase
+        .from('tasks')
+        .select('*')
+        .eq('group_id', groupId);
+
+      if (tasksError || !tasksData) {
+        setTasks([]);
+        setLoading(false);
+        return;
+      }
+
+      // 2. Agafem els task_assignments relacionats
+      const taskIds = tasksData.map((t: any) => t.id);
+      const { data: assignmentsData, error: assignmentsError } = await supabase
+        .from('task_assignments')
+        .select('task_id, user_id, profiles: user_id (id, username, full_name, avatar_url)')
+        .in('task_id', taskIds);
+
+      // Prepara un diccionari taskId -> [users]
+      const assignmentsMap: { [taskId: string]: User[] } = {};
+      (assignmentsData ?? []).forEach((row: any) => {
+        if (!assignmentsMap[row.task_id]) assignmentsMap[row.task_id] = [];
+        assignmentsMap[row.task_id].push({
+          id: row.profiles?.id,
+          username: row.profiles?.full_name ?? '',
+          name: row.profiles?.full_name ?? '',
+          image: row.users?.avatar_url ?? '',
+        });
+      });
+
+      // 3. Muntem les tasques en format Task (amb assignedTo)
+      const tasksList: Task[] = tasksData.map((t: any) => ({
+        id: t.id,
+        title: t.title,
+        description: t.description,
+        createdAt: t.created_at,
+        groupId: t.group_id,
+        points: t.points,
+        completed: t.completed,
+        assignedTo: assignmentsMap[t.id] ?? [],
+        dueDate: t.due_date,
+        frequency: t.frequency,
+        completedBy: [], // Omple amb completions si vols!
+      }));
+
+      setTasks(tasksList);
+      setLoading(false);
+    };
+
+    fetchTasks();
+  }, [groupId]);
 
   // Filtrar per avui
   const todayString = new Date().toLocaleDateString('ca-ES');
@@ -66,7 +92,6 @@ export default function TaskCalendar() {
     task =>
       new Date(task.dueDate).toLocaleDateString('ca-ES') === todayString
   );
-
   // Filtrar i agrupar per dia per a setmana
   const weekSections = groupTasksByDay(tasks);
 
@@ -76,7 +101,7 @@ export default function TaskCalendar() {
         <Text className="text-xl text-marro-fosc font-bold">Tasques</Text>
         <Pressable
           className="bg-ocre px-4 py-2 rounded-xl shadow active:bg-ocre/80"
-          onPress={() => router.push('/new-task')} 
+          onPress={() => router.push(`/new-task?groupId=${groupId}`)}
         >
           <Text className="text-blanc-pur font-semibold">+ Nova Tasca</Text>
         </Pressable>
@@ -98,8 +123,11 @@ export default function TaskCalendar() {
         </Pressable>
       </View>
 
-      {/* Render segons el toggle */}
-      {view === 'today' ? (
+      {loading ? (
+        <View className="flex-1 justify-center items-center">
+          <ActivityIndicator color="#D98C38" size="large" />
+        </View>
+      ) : view === 'today' ? (
         <FlatList
           data={todayTasks}
           keyExtractor={item => item.id}

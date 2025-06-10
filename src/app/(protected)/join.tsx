@@ -6,6 +6,8 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/AuthProvider';
 import { useRouter } from 'expo-router';
 import { useLocalSearchParams } from 'expo-router';
+import { useGroup } from '@/providers/GroupProvider';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function JoinGroupScreen() {
   const { user, isAuthenticated } = useAuth();
@@ -13,6 +15,7 @@ export default function JoinGroupScreen() {
   const params = useLocalSearchParams<{ groupId?: string }>();
   const [joinId, setJoinId] = useState(params.groupId || '');
   const [loadingJoin, setLoadingJoin] = useState(false);
+  const { setCurrentGroupId } = useGroup(); 
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -66,6 +69,18 @@ export default function JoinGroupScreen() {
         group_id: joinId.trim(),
         user_id: user!.id,
       });
+
+      if (!memberError) {
+      await AsyncStorage.setItem('currentGroupId', joinId.trim());
+      setCurrentGroupId(joinId.trim());
+      Alert.alert('✅ T’has unit al grup correctament!');
+      router.replace('/profile');
+}
+
+
+
+      
+
 
       if (memberError) {
         console.error('Error unint‐te al grup:', memberError);

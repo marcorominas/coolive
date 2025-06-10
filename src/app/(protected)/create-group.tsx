@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/AuthProvider';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useGroup } from '@/providers/GroupProvider';
 
 export default function CreateGroupScreen() {
   const { user } = useAuth();
@@ -14,6 +15,8 @@ export default function CreateGroupScreen() {
   const [groupName, setGroupName] = useState('');
   const [inviteLink, setInviteLink] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const { setCurrentGroupId } = useGroup();
 
   const createGroup = async () => {
     if (!groupName.trim()) {
@@ -40,22 +43,20 @@ export default function CreateGroupScreen() {
       }
 
       const newGroupId = data.id;
-
       // 2. Inserir a 'group_members' per afegir l’usuari com a membre inicial
       await supabase.from('group_members').insert({
         group_id: newGroupId,
         user_id: user!.id,
       });
-
-      // 3. Guardar l’ID del grup a AsyncStorage - recordar local
       await AsyncStorage.setItem('currentGroupId', newGroupId);
+      setCurrentGroupId(newGroupId);//actualitzar el context del grup   
 
       // 4. Deep link d’invitació
       const link = `my-coolive://join?groupId=${newGroupId}`;
       setInviteLink(link);
 
       // 5. Redirigir (opcional) a una altra pantalla (p.e. llista de tasques)
-      //router.replace(`/new-task?groupId=${newGroupId}`);
+      router.replace(`/profile`);
 
     } catch (err) {
       console.error('Error inesperat crear grup:', err);

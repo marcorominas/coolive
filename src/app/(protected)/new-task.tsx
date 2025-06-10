@@ -40,9 +40,16 @@ export default function NewTaskScreen() {
   useEffect(() => {
     const fetchMembers = async () => {
       setLoadingMembers(true);
+      //comprova si groupid no sigui undefined
+      if (!groupId) {
+        setMembers([]);
+        setLoadingMembers(false);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('group_members')
-        .select('user_id, users(name)')
+        .select('user_id, profiles(full_name, avatar_url)')
         .eq('group_id', groupId);
 
       if (error) {
@@ -52,7 +59,7 @@ export default function NewTaskScreen() {
         // Si 'users' és una relació, pots agafar el nom així:
         const membersParsed = data?.map((item: any) => ({
           id: item.user_id,
-          name: item.users?.name ?? 'Sense nom',
+          name: item.profiles?.full_name ?? 'Sense nom',
         })) ?? [];
         setMembers(membersParsed);
         // Assigna el primer per defecte
@@ -61,14 +68,27 @@ export default function NewTaskScreen() {
       setLoadingMembers(false);
     };
 
-    if (groupId) fetchMembers();
+    fetchMembers();
   }, [groupId]);
 
   // Handler de creació
   const onSubmit = async () => {
-    if (!title || !description || !points || !assignedUser) return;
-
-    const { data, error } = await supabase
+    // Abans de res, mostra tots els valors que envies a Supabase
+    console.log('DEBUG SUBMIT', {
+      title,
+      description,
+      points,
+      assignedUser,
+      groupId,
+      userId: user?.id,
+      frequency
+    });
+    if (!title || !description || !points || !assignedUser || !groupId || !user?.id) {
+      alert('Falten dades per crear la tasca!');
+      return;
+    }
+    // 1. Crear la tasca - validació bàsica
+    const { data: newTask, error: errorTask } = await supabase
       .from('tasks')
       .insert({
         title: title.trim(),
@@ -79,15 +99,34 @@ export default function NewTaskScreen() {
         completed: false,
         due_date: new Date().toISOString(),
         frequency,
-        assigned_to: assignedUser, // FK a users.id
-      });
+        //assigned_to: assignedUser, // Si vols assignar a un usuari específic
+      })
+      .select() //obtenir la tasca creada
+      .single();
 
-    if (error) {
-      alert('Error creant tasca! ' + error.message);
+    if (errorTask || !newTask) {
+      alert('Error creant tasca! ' + (errorTask?.message ?? ''));
       return;
     }
 
-    router.replace('/');
+   
+
+
+    // 2. Crear la relació amb l'usuari assignat
+    const { error: errorAssign } = await supabase
+      .from('task_assignments')
+      .insert({
+        task_id: newTask.id,
+        user_id: assignedUser,
+        assigned_at: new Date().toISOString(),
+      });
+    if (errorAssign) {
+      alert('Error assignant tasca! ' + (errorAssign.message ));
+      return;
+    }
+
+    router.replace('/tasksCalendar'); // Redirigeix a la llista de tasques
+    // 3. Actualitzar punts de l'usuari assignat
   };
 
   return (
@@ -175,7 +214,7 @@ export default function NewTaskScreen() {
               </View>
             </View>
             {/* Assignació d’usuari */}
-            {/* <View className="mb-4">
+             <View className="mb-4">
               <Text className="text-base font-medium mb-1 text-marro-fosc">
                 Assignar a
               </Text>
@@ -211,7 +250,7 @@ export default function NewTaskScreen() {
                   )}
                 </View>
               )}
-            </View> */}
+            </View> 
             {/* Botó crear */}
             <Pressable
               onPress={onSubmit}

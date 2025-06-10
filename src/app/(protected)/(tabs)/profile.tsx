@@ -1,21 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  Image,
-  Pressable,
-  Alert,
-} from 'react-native';
-import { supabase } from '@/lib/supabase';
+import { View, Text, Image, Pressable, Alert, ActivityIndicator } from 'react-native';
 import { useAuth } from '@/providers/AuthProvider';
+import { supabase } from '@/lib/supabase';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useGroup } from '@/providers/GroupProvider';
 
 export default function ProfileScreen() {
   const { user, isAuthenticated } = useAuth();
+  const { currentGroupId, setCurrentGroupId } = useGroup();
   const router = useRouter();
-  const [signingOut, setSigningOut] = useState(false);
- 
+
   const [profileData, setProfileData] = useState<{
     full_name: string;
     avatar_url: string | null;
@@ -23,15 +18,15 @@ export default function ProfileScreen() {
     points: number;
   } | null>(null);
 
-  // Si no té avatar_url, genera un per defecte amb el seu id!
+  const [groupData, setGroupData] = useState<{ name: string; id: string } | null>(null);
+  const [loadingGroup, setLoadingGroup] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
+  const [leavingGroup, setLeavingGroup] = useState(false);
+
+  // Avatar per defecte
   const defaultAvatarUrl = `https://api.dicebear.com/8.x/lorelei/png?seed=${user?.id || 'random'}`;
 
-  const [groupData, setGroupData] = useState<{
-    name: string;
-    id: string} | null>(null);
-  const [loadingGroup, setLoadingGroup] = useState(true);
-
-
+  // Carregar dades del perfil
   useEffect(() => {
     if (!isAuthenticated) {
       router.replace('/login');
@@ -43,55 +38,72 @@ export default function ProfileScreen() {
         .select('full_name, avatar_url, bio, points')
         .eq('id', user!.id)
         .single();
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error llegint perfil:', error);
-      } else if (data) {
-        setProfileData(data as any);
-      }
+      if (data) setProfileData(data as any);
     })();
   }, [user, isAuthenticated]);
 
-
-   // Carrega les dades del grup actual de l'usuari
+  // Carregar dades del grup
   useEffect(() => {
-    const fetchGroupData = async () => {
-      setLoadingGroup(true);
-      try {
-        const groupId = await AsyncStorage.getItem('currentGroupId');
-        if (!groupId) {
-          setGroupData(null);
-          setLoadingGroup(false);
-          return;
-        }
-        const { data, error } = await supabase
-          .from('groups')
-          .select('id, name')
-          .eq('id', groupId)
-          .single();
-        if (error) {
-          setGroupData(null);
-          console.error('Error carregant el grup:', error);
-        } else if (data) {
-          setGroupData(data);
-        }
-      } catch (err) {
-        setGroupData(null);
-        console.error('Error inesperat carregant grup:', err);
-      } finally {
-        setLoadingGroup(false);
-      }
-    };
-    if (isAuthenticated) fetchGroupData();
-  }, [user, isAuthenticated]);
-
-  const handleSignOut = async () => {
-    setSigningOut(true);
-    const { error } = await supabase.auth.signOut();
-    setSigningOut(false);
-    if (error) {
-      Alert.alert('Error sign out', error.message);
+    if (!currentGroupId) {
+      setGroupData(null);
       return;
     }
+    setLoadingGroup(true);
+    (async () => {
+      const { data, error } = await supabase
+        .from('groups')
+        .select('id, name')
+        .eq('id', currentGroupId)
+        .single();
+      if (data) setGroupData(data);
+      else setGroupData(null);
+      setLoadingGroup(false);
+    })();
+  }, [currentGroupId]);
+
+  // Funció per sortir del grup
+  const handleLeaveGroup = async () => {
+    if (!currentGroupId) return;
+    Alert.alert(
+      'Segur que vols sortir del grup?',
+      'Aquesta acció et treurà del grup i hauràs de crear-ne o unir-te a un altre per continuar.',
+      [
+        { text: 'Cancel·la', style: 'cancel' },
+        {
+          text: 'Sortir',
+          style: 'destructive',
+          onPress: async () => {
+            setLeavingGroup(true);
+            // Esborra de group_members a Supabase
+            const { error } = await supabase
+              .from('group_members')
+              .delete()
+              .eq('group_id', currentGroupId)
+              .eq('user_id', user!.id);
+
+            if (error) {
+              Alert.alert('Error sortint del grup', error.message);
+              setLeavingGroup(false);
+              return;
+            }
+
+            // Esborra l'ID de grup del context i AsyncStorage
+            setCurrentGroupId('');
+            await AsyncStorage.removeItem('currentGroupId');
+            setGroupData(null);
+            setLeavingGroup(false);
+            Alert.alert('Has sortit del grup!');
+          },
+        },
+      ]
+    );
+  };
+
+  // Funció per sortir de la sessió
+  const handleSignOut = async () => {
+    setSigningOut(true);
+    await supabase.auth.signOut();
+    setSigningOut(false);
     router.replace('/login');
   };
 
@@ -100,22 +112,18 @@ export default function ProfileScreen() {
       {/* Header */}
       <View className="h-12 bg-gris-claro flex-row justify-between items-center px-4">
         <Text className="text-lg font-bold text-marron-fosc">COOLIVE</Text>
-        <Pressable onPress={() => {}}>
-        </Pressable>
       </View>
 
-      {/* Contingut central */}
       <View className="flex-1 items-center pt-8">
         {/* Avatar */}
-        <View className="w-48 h-48 rounded-full bg-gray-200 overflow-hidden items-center justify-center">
+        <View className="w-40 h-40 rounded-full bg-gray-200 overflow-hidden items-center justify-center">
           <Image
             source={{ uri: profileData?.avatar_url || defaultAvatarUrl }}
             className="w-full h-full"
             resizeMode="cover"
           />
         </View>
-
-        {/* Nom bio i punts */}
+        {/* Nom, punts i bio */}
         <Text className="mt-4 text-xl font-semibold text-marron-fosc">
           {profileData?.full_name || 'Usuari sense nom'}
         </Text>
@@ -125,22 +133,34 @@ export default function ProfileScreen() {
         <Text className="mt-1 text-marron-fosc">
           {profileData?.bio || 'Sense biografia'}
         </Text>
-        {/* Mostra el grup actual */}
+
+        {/* Info grup */}
         <View className="mt-6 items-center">
           {loadingGroup ? (
-            <Text className="text-marron-fosc">Carregant grup...</Text>
-          ) : groupData ? (
+            <ActivityIndicator size="small" color="#A08C7A" />
+          ) : currentGroupId && groupData ? (
             <>
-              <Text className="text-marron-fosc font-bold">Grup actual:</Text>
+              <Text className="text-marron-fosc font-bold mb-1">Grup actual:</Text>
               <Text className="text-marron-fosc">Nom: {groupData.name}</Text>
-              <Text className="text-marron-fosc">ID: {groupData.id}</Text>
+              <Text className="text-marron-fosc">Codi: {groupData.id}</Text>
+              <Pressable
+                onPress={handleLeaveGroup}
+                className="mt-4 w-36 rounded-lg py-2 items-center bg-red-500"
+                disabled={leavingGroup}
+              >
+                <Text className="text-blanc-pur font-medium">
+                  {leavingGroup ? 'Sortint...' : 'Sortir del grup'}
+                </Text>
+              </Pressable>
             </>
           ) : (
-            <Text className="text-marron-fosc">No estàs en cap grup.</Text>
+            <Text className="text-marron-fosc">
+              No estàs en cap grup. Crea un grup o uneix-te a un!
+            </Text>
           )}
         </View>
 
-        {/* Botó Editar Perfil */}
+        {/* Botó editar perfil */}
         <Pressable
           onPress={() => router.push('/profile-setup')}
           className="mt-6 w-3/4 bg-ocre py-3 rounded-lg items-center"
@@ -148,25 +168,29 @@ export default function ProfileScreen() {
           <Text className="text-blanc-pur font-medium">Editar Perfil</Text>
         </Pressable>
 
-        {/* Botó Crear Grup */}
-        <Pressable
-          onPress={() => router.push('/create-group')}
-          className="mt-4 w-3/4 bg-ocre py-3 rounded-lg flex-row justify-center items-center"
-        >
-          <Text className="text-blanc-pur font-medium mr-2">Crear Grup</Text>
-          <Text className="text-blanc-pur text-lg">＋</Text>
-        </Pressable>
+        {/* Botó crear grup: només si NO està a cap grup */}
+        {!currentGroupId && (
+          <Pressable
+            onPress={() => router.push('/create-group')}
+            className="mt-4 w-3/4 bg-ocre py-3 rounded-lg flex-row justify-center items-center"
+          >
+            <Text className="text-blanc-pur font-medium mr-2">Crear Grup</Text>
+            <Text className="text-blanc-pur text-lg">＋</Text>
+          </Pressable>
+        )}
 
-        {/* Botó Codi Grup (Unir‐te) */}
-        <Pressable
-          onPress={() => router.push('/join')}
-          className="mt-4 w-3/4 border-2 border-marron-fosc py-3 rounded-lg flex-row justify-between items-center px-4"
-        >
-          <Text className="text-marron-fosc font-medium">Codi Grup</Text>
-          <Text className="text-marron-fosc text-lg">＋</Text>
-        </Pressable>
+        {/* Botó unir-se a grup: només si NO està a cap grup */}
+        {!currentGroupId && (
+          <Pressable
+            onPress={() => router.push('/join')}
+            className="mt-4 w-3/4 border-2 border-marron-fosc py-3 rounded-lg flex-row justify-between items-center px-4"
+          >
+            <Text className="text-marron-fosc font-medium">Codi Grup</Text>
+            <Text className="text-marron-fosc text-lg">＋</Text>
+          </Pressable>
+        )}
 
-        {/* Botó Sign Out */}
+        {/* Botó logout */}
         <Pressable
           onPress={handleSignOut}
           className="mt-4 w-2/6 rounded-lg py-3 items-center bg-marro-fosc"
