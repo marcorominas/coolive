@@ -136,7 +136,9 @@ export default function TaskCalendar() {
         .eq('user_id', user.id);
     }
     fetchTasks();
+    
   };
+  
 
   // Filtrar per avui
   const todayString = new Date().toLocaleDateString('ca-ES');

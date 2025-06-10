@@ -132,6 +132,9 @@ export default function NewTaskScreen() {
         assigned_at: new Date().toISOString(),
       });
 
+      console.log('DEBUG TASCA CREADA:', newTask);
+    
+
     if (errorAssign) {
       alert('Error assignant tasca! ' + (errorAssign.message));
       return;
