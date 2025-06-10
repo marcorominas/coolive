@@ -3,7 +3,9 @@ import { View, Text, SafeAreaView, Pressable, FlatList, SectionList, ActivityInd
 import TaskListItem from '@/components/TaskListItem';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { supabase } from '@/lib/supabase';
-import type { Task, User } from '@/types';
+import { useGroup } from '@/providers/GroupProvider';
+import { useAuth } from '@/providers/AuthProvider';
+import type { Task, User, Completion } from '@/types';
 
 const weekDays = [
   'Dilluns', 'Dimarts', 'Dimecres', 'Dijous', 'Divendres', 'Dissabte', 'Diumenge'
@@ -20,71 +22,121 @@ function groupTasksByDay(tasks: Task[]) {
 
 export default function TaskCalendar() {
   const router = useRouter();
-  const { groupId } = useLocalSearchParams<{ groupId?: string }>();
+  const { groupId: groupIdParam } = useLocalSearchParams<{ groupId?: string }>();
+  const { currentGroupId } = useGroup();
+  const { user } = useAuth();
+
+  const [groupId, setGroupId] = useState<string | undefined>(undefined);
+  useEffect(() => {
+    if (groupIdParam) setGroupId(groupIdParam);
+    else if (currentGroupId) setGroupId(currentGroupId);
+    else setGroupId(undefined);
+  }, [groupIdParam, currentGroupId]);
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<'today' | 'week'>('today');
 
-  useEffect(() => {
+  // FETCH amb assignats i completions!
+  const fetchTasks = async () => {
     if (!groupId) return;
 
-    // Fetch de totes les tasques + usuaris assignats
-    const fetchTasks = async () => {
-      setLoading(true);
+    setLoading(true);
 
-      // 1. Agafem les tasques del grup
-      const { data: tasksData, error: tasksError } = await supabase
-        .from('tasks')
-        .select('*')
-        .eq('group_id', groupId);
+    // 1. Tasques del grup
+    const { data: tasksData, error: tasksError } = await supabase
+      .from('tasks')
+      .select('*')
+      .eq('group_id', groupId);
 
-      if (tasksError || !tasksData) {
-        setTasks([]);
-        setLoading(false);
-        return;
-      }
-
-      // 2. Agafem els task_assignments relacionats
-      const taskIds = tasksData.map((t: any) => t.id);
-      const { data: assignmentsData, error: assignmentsError } = await supabase
-        .from('task_assignments')
-        .select('task_id, user_id, profiles: user_id (id, username, full_name, avatar_url)')
-        .in('task_id', taskIds);
-
-      // Prepara un diccionari taskId -> [users]
-      const assignmentsMap: { [taskId: string]: User[] } = {};
-      (assignmentsData ?? []).forEach((row: any) => {
-        if (!assignmentsMap[row.task_id]) assignmentsMap[row.task_id] = [];
-        assignmentsMap[row.task_id].push({
-          id: row.profiles?.id,
-          username: row.profiles?.full_name ?? '',
-          name: row.profiles?.full_name ?? '',
-          image: row.users?.avatar_url ?? '',
-        });
-      });
-
-      // 3. Muntem les tasques en format Task (amb assignedTo)
-      const tasksList: Task[] = tasksData.map((t: any) => ({
-        id: t.id,
-        title: t.title,
-        description: t.description,
-        createdAt: t.created_at,
-        groupId: t.group_id,
-        points: t.points,
-        completed: t.completed,
-        assignedTo: assignmentsMap[t.id] ?? [],
-        dueDate: t.due_date,
-        frequency: t.frequency,
-        completedBy: [], // Omple amb completions si vols!
-      }));
-
-      setTasks(tasksList);
+    if (tasksError || !tasksData) {
+      setTasks([]);
       setLoading(false);
-    };
+      return;
+    }
 
+    // 2. Assignacions
+    const taskIds = tasksData.map((t: any) => t.id);
+    if (!taskIds.length) {
+      setTasks([]);
+      setLoading(false);
+      return;
+    }
+    const { data: assignmentsData } = await supabase
+      .from('task_assignments')
+      .select('task_id, user_id, profiles: user_id (id, full_name, avatar_url)')
+      .in('task_id', taskIds);
+
+    // 3. Completions
+    const { data: completionsData } = await supabase
+      .from('completions')
+      .select('task_id, user_id, completed_at')
+      .in('task_id', taskIds);
+
+    // Diccionaris per creuar dades
+    const assignmentsMap: { [taskId: string]: User[] } = {};
+    (assignmentsData ?? []).forEach((row: any) => {
+      if (!assignmentsMap[row.task_id]) assignmentsMap[row.task_id] = [];
+      assignmentsMap[row.task_id].push({
+        id: row.profiles?.id,
+        name: row.profiles?.full_name ?? '',
+        image: row.profiles?.avatar_url ?? '',
+      });
+    });
+
+    const completionsMap: { [taskId: string]: Completion[] } = {};
+    (completionsData ?? []).forEach((row: any) => {
+      if (!completionsMap[row.task_id]) completionsMap[row.task_id] = [];
+      completionsMap[row.task_id].push({
+        id: '', // O pots usar `${row.task_id}-${row.user_id}` com a id fake
+        taskId: row.task_id,
+        userId: row.user_id,
+        completedAt: row.completed_at,
+      });
+    });
+
+    const tasksList: Task[] = tasksData.map((t: any) => ({
+      id: t.id,
+      title: t.title,
+      description: t.description,
+      createdAt: t.created_at,
+      groupId: t.group_id,
+      points: t.points,
+      completed: !!(completionsMap[t.id]?.length), // hi ha completions per la tasca
+      assignedTo: assignmentsMap[t.id] ?? [],
+      dueDate: t.due_date,
+      frequency: t.frequency,
+      completedBy: completionsMap[t.id] ?? [],
+    }));
+
+    setTasks(tasksList);
+    setLoading(false);
+  };
+
+  useEffect(() => {
     fetchTasks();
+    // eslint-disable-next-line
   }, [groupId]);
+
+  // Handler per marcar/desmarcar com a feta per l'usuari logat
+  const handleToggleComplete = async (task: Task) => {
+    if (!user?.id) return;
+    const jaCompletada = (task.completedBy ?? []).some(c => c.userId === user.id);
+
+    if (!jaCompletada) {
+      await supabase.from('completions').insert({
+        task_id: task.id,
+        user_id: user.id,
+        completed_at: new Date().toISOString(),
+      });
+    } else {
+      await supabase.from('completions')
+        .delete()
+        .eq('task_id', task.id)
+        .eq('user_id', user.id);
+    }
+    fetchTasks();
+  };
 
   // Filtrar per avui
   const todayString = new Date().toLocaleDateString('ca-ES');
@@ -94,6 +146,23 @@ export default function TaskCalendar() {
   );
   // Filtrar i agrupar per dia per a setmana
   const weekSections = groupTasksByDay(tasks);
+
+  // Si no hi ha grup, mostra missatge
+  if (!groupId) {
+    return (
+      <SafeAreaView className="flex-1 bg-beix-clar justify-center items-center">
+        <Text className="text-xl text-marro-fosc text-center mb-6">
+          No s'ha trobat cap grup actiu.
+        </Text>
+        <Pressable
+          className="bg-ocre px-4 py-2 rounded-xl shadow"
+          onPress={() => router.replace('/profile')}
+        >
+          <Text className="text-blanc-pur font-semibold">Tornar al Perfil</Text>
+        </Pressable>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-beix-clar">
@@ -131,7 +200,7 @@ export default function TaskCalendar() {
         <FlatList
           data={todayTasks}
           keyExtractor={item => item.id}
-          renderItem={({ item }) => <TaskListItem task={item} />}
+          renderItem={({ item }) => <TaskListItem task={item} onToggleComplete={handleToggleComplete} userId={user?.id} />}
           contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 24 }}
           ListEmptyComponent={
             <Text className="text-center text-gray-400 mt-10">No hi ha tasques per avui 🎉</Text>
@@ -147,7 +216,7 @@ export default function TaskCalendar() {
           )}
           renderItem={({ item }) => (
             <View className="px-4">
-              <TaskListItem task={item} />
+              <TaskListItem task={item} onToggleComplete={handleToggleComplete} userId={user?.id} />
             </View>
           )}
           contentContainerStyle={{ paddingBottom: 32 }}

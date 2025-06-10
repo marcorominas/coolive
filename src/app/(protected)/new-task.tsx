@@ -15,6 +15,7 @@ import {
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/AuthProvider';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useGroup } from '@/providers/GroupProvider';
 
 const frequencyOptions = [
   { key: 'once', label: 'Un cop' },
@@ -26,7 +27,10 @@ const frequencyOptions = [
 export default function NewTaskScreen() {
   const router = useRouter();
   const { user } = useAuth();
-  const { groupId } = useLocalSearchParams<{ groupId?: string }>();
+  const { groupId: groupIdParam } = useLocalSearchParams<{ groupId?: string }>();
+  const { currentGroupId } = useGroup();
+
+  const [groupId, setGroupId] = useState<string | undefined>(undefined);
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -35,18 +39,25 @@ export default function NewTaskScreen() {
   const [assignedUser, setAssignedUser] = useState<string>('');
   const [members, setMembers] = useState<{ id: string; name: string }[]>([]);
   const [loadingMembers, setLoadingMembers] = useState(true);
+  const [dueDate, setDueDate] = useState(new Date().toISOString().slice(0,10)); // Format YYYY-MM-DD
+  
+  
+  // Actualitza groupId quan canvii el param o el context!
+  useEffect(() => {
+    if (groupIdParam) setGroupId(groupIdParam);
+    else if (currentGroupId) setGroupId(currentGroupId);
+    else setGroupId(undefined);
+  }, [groupIdParam, currentGroupId]);
 
-  // Carrega membres del grup
+  // Carrega membres del grup (només si tenim groupId!)
   useEffect(() => {
     const fetchMembers = async () => {
       setLoadingMembers(true);
-      //comprova si groupid no sigui undefined
       if (!groupId) {
         setMembers([]);
         setLoadingMembers(false);
         return;
       }
-
       const { data, error } = await supabase
         .from('group_members')
         .select('user_id, profiles(full_name, avatar_url)')
@@ -56,13 +67,11 @@ export default function NewTaskScreen() {
         console.error(error);
         setMembers([]);
       } else {
-        // Si 'users' és una relació, pots agafar el nom així:
         const membersParsed = data?.map((item: any) => ({
           id: item.user_id,
           name: item.profiles?.full_name ?? 'Sense nom',
         })) ?? [];
         setMembers(membersParsed);
-        // Assigna el primer per defecte
         if (membersParsed.length > 0) setAssignedUser(membersParsed[0].id);
       }
       setLoadingMembers(false);
@@ -71,9 +80,10 @@ export default function NewTaskScreen() {
     fetchMembers();
   }, [groupId]);
 
-  // Handler de creació
+
+
+  // Handler de creació de la tasca
   const onSubmit = async () => {
-    // Abans de res, mostra tots els valors que envies a Supabase
     console.log('DEBUG SUBMIT', {
       title,
       description,
@@ -81,36 +91,37 @@ export default function NewTaskScreen() {
       assignedUser,
       groupId,
       userId: user?.id,
-      frequency
+      frequency,
     });
+    // Validació reforçada
     if (!title || !description || !points || !assignedUser || !groupId || !user?.id) {
       alert('Falten dades per crear la tasca!');
       return;
     }
-    // 1. Crear la tasca - validació bàsica
+
+    // 1. Crear la tasca
     const { data: newTask, error: errorTask } = await supabase
       .from('tasks')
       .insert({
         title: title.trim(),
         description: description.trim(),
         group_id: groupId,
-        created_by: user!.id,
+        created_by: user.id,
         points: Number(points),
         completed: false,
-        due_date: new Date().toISOString(),
+        due_date: dueDate,
         frequency,
-        //assigned_to: assignedUser, // Si vols assignar a un usuari específic
       })
-      .select() //obtenir la tasca creada
+      .select()
       .single();
+
+      console.log('DEBUG TASCA CREADA:', newTask);
+      console.log('DEBUG ASSIGNED USER (UUID):', assignedUser);
 
     if (errorTask || !newTask) {
       alert('Error creant tasca! ' + (errorTask?.message ?? ''));
       return;
     }
-
-   
-
 
     // 2. Crear la relació amb l'usuari assignat
     const { error: errorAssign } = await supabase
@@ -120,14 +131,33 @@ export default function NewTaskScreen() {
         user_id: assignedUser,
         assigned_at: new Date().toISOString(),
       });
+
     if (errorAssign) {
-      alert('Error assignant tasca! ' + (errorAssign.message ));
+      alert('Error assignant tasca! ' + (errorAssign.message));
       return;
     }
 
-    router.replace('/tasksCalendar'); // Redirigeix a la llista de tasques
-    // 3. Actualitzar punts de l'usuari assignat
+    router.replace('/taskscalendar');
   };
+
+  // Si no hi ha grup, mostra avís i redirigeix
+  if (!groupId) {
+    return (
+      <SafeAreaView className="flex-1 bg-beix-clar justify-center items-center">
+        <Text className="text-xl text-marro-fosc text-center mb-6">
+          No s'ha trobat cap grup actiu.
+        </Text>
+        <Pressable
+          className="bg-ocre px-4 py-2 rounded-xl shadow"
+          onPress={() => router.replace('/profile')}
+        >
+          <Text className="text-blanc-pur font-semibold">Tornar al Perfil</Text>
+        </Pressable>
+      </SafeAreaView>
+    );
+  }
+
+  
 
   return (
     <SafeAreaView className="flex-1 bg-beix-clar">
@@ -184,6 +214,20 @@ export default function NewTaskScreen() {
                 maxLength={2}
               />
             </View>
+            {/* Dia límit */}
+            <View className="mb-4">
+              <Text className="text-base font-medium mb-1 text-marro-fosc">
+                Dia límit
+              </Text>
+              <TextInput
+                className="border border-ocre bg-blanc-pur rounded-xl p-3 w-40 text-marro-fosc"
+                placeholder="2024-07-04"
+                value={dueDate}
+                onChangeText={setDueDate}
+              />
+              <Text className="text-xs text-gray-500">Format: AAAA-MM-DD</Text>
+            </View>
+
             {/* Freqüència */}
             <View className="mb-4">
               <Text className="text-base font-medium mb-1 text-marro-fosc">
@@ -214,7 +258,7 @@ export default function NewTaskScreen() {
               </View>
             </View>
             {/* Assignació d’usuari */}
-             <View className="mb-4">
+            <View className="mb-4">
               <Text className="text-base font-medium mb-1 text-marro-fosc">
                 Assignar a
               </Text>
@@ -250,7 +294,7 @@ export default function NewTaskScreen() {
                   )}
                 </View>
               )}
-            </View> 
+            </View>
             {/* Botó crear */}
             <Pressable
               onPress={onSubmit}
