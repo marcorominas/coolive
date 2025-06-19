@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, SafeAreaView, ScrollView, FlatList, Pressable } from 'react-native';
-import TaskListItem from '@/components/TaskListItem'; // Assumint que tens aquest component
-import type { Task } from '@/types';
+import { View, Text, SafeAreaView, ScrollView, FlatList, Pressable, ActivityIndicator } from 'react-native';
+import TaskListItem from '@/components/TaskListItem'; 
+import type { Task, User, Completion } from '@/types';
 import { useAuth } from '@/providers/AuthProvider';
 import { supabase } from '@/lib/supabase';
 
@@ -28,41 +28,91 @@ export default function HomeScreen() {
  
   const today = new Date().toLocaleDateString('ca-ES', { weekday: 'long', day: 'numeric', month: 'short' });
   
+  const [tasksToday, setTasksToday] = useState<Task[]>([])
+  const [loadingTasks, setLoadingTasks] = useState(true)  
+ 
+  // Carrega les tasques d'avui
+  useEffect(() => {
+    const fetchTasks = async () => {
+      if (!groupData?.id) return;
+      setLoadingTasks(true);
 
-  // Tasques mock per avui (simples, pots posar fetch a supabase si vols)
-  const tasksToday: Task[] = [
-    {
-      id: '1',
-      title: 'Treure la brossa',
-      description: '',
-      createdAt: new Date().toISOString(),
-      groupId: 'g1',
-      points: 2,
-      completed: false,
-      assignedTo: [
-        { id: 'u1', name: 'Marina', image: 'https://i.pravatar.cc/150?img=1' }
-      ],
-      dueDate: new Date().toISOString(),
-      frequency: 'once',
-      completedBy: [],
-    },
-    {
-      id: '2',
-      title: 'Netejar cuina',
-      description: '',
-      createdAt: new Date().toISOString(),
-      groupId: 'g1',
-      points: 3,
-      completed: false,
-      assignedTo: [
-        { id: 'u2', name: 'Albert', image: 'https://i.pravatar.cc/150?img=2' }
-      ],
-      dueDate: new Date().toISOString(),
-      frequency: 'weekly',
-      completedBy: [],
-    },
-  //   // Pots afegir més mock tasks
-  ]
+      const { data: tasksData, error: tasksError } = await supabase
+        .from('tasks')
+        .select('*')
+        .eq('group_id', groupData.id);
+
+      if (tasksError || !tasksData) {
+        setTasksToday([]);
+        setLoadingTasks(false);
+        return;
+      }
+
+      const taskIds = tasksData.map((t: any) => t.id);
+      if (!taskIds.length) {
+        setTasksToday([]);
+        setLoadingTasks(false);
+        return;
+      }
+
+      const { data: assignmentsData } = await supabase
+        .from('task_assignments')
+        .select('task_id, user_id, profiles: user_id (id, full_name, avatar_url)')
+        .in('task_id', taskIds);
+
+      const { data: completionsData } = await supabase
+        .from('completions')
+        .select('task_id, user_id, completed_at')
+        .in('task_id', taskIds);
+
+      const assignmentsMap: { [taskId: string]: User[] } = {};
+      (assignmentsData ?? []).forEach((row: any) => {
+        if (!assignmentsMap[row.task_id]) assignmentsMap[row.task_id] = [];
+        assignmentsMap[row.task_id].push({
+          id: row.profiles?.id,
+          name: row.profiles?.full_name ?? '',
+          image: row.profiles?.avatar_url ?? '',
+        });
+      });
+
+      const completionsMap: { [taskId: string]: Completion[] } = {};
+      (completionsData ?? []).forEach((row: any) => {
+        if (!completionsMap[row.task_id]) completionsMap[row.task_id] = [];
+        completionsMap[row.task_id].push({
+          id: '',
+          taskId: row.task_id,
+          userId: row.user_id,
+          completedAt: row.completed_at,
+        });
+      });
+
+      const tasksList: Task[] = tasksData.map((t: any) => ({
+        id: t.id,
+        title: t.title,
+        description: t.description,
+        createdAt: t.created_at,
+        groupId: t.group_id,
+        points: t.points,
+        completed: !!(completionsMap[t.id]?.length),
+        assignedTo: assignmentsMap[t.id] ?? [],
+        dueDate: t.due_date,
+        frequency: t.frequency,
+        completedBy: completionsMap[t.id] ?? [],
+      }));
+
+      const todayString = new Date().toLocaleDateString('ca-ES');
+      const todayTasks = tasksList.filter(
+        task => new Date(task.dueDate).toLocaleDateString('ca-ES') === todayString
+      );
+
+      setTasksToday(todayTasks);
+      setLoadingTasks(false);
+    };
+
+    fetchTasks();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [groupData]);
+
 
 
 
@@ -156,7 +206,9 @@ export default function HomeScreen() {
         {/* Nova secció: Tasques d’avui */}
         <View className="mb-4">
           <Text className="text-marro-fosc font-bold text-xl mb-2">Tasques d’avui</Text>
-          {tasksToday.length === 0 ? (
+          {loadingTasks ? (
+            <ActivityIndicator color="#D98C38" />
+          ) : tasksToday.length === 0 ? (
             <Text className="text-gray-400 italic">No tens cap tasca avui </Text>
           ) : (
             <FlatList

@@ -77,11 +77,6 @@ export default function JoinGroupScreen() {
       router.replace('/profile');
 }
 
-
-
-      
-
-
       if (memberError) {
         console.error('Error unint‐te al grup:', memberError);
         Alert.alert('No s’ha pogut unir‐te al grup.');

@@ -102,7 +102,7 @@ export default function TaskCalendar() {
       createdAt: t.created_at,
       groupId: t.group_id,
       points: t.points,
-      completed: !!(completionsMap[t.id]?.length), // hi ha completions per la tasca
+      completed: !!(completionsMap[t.id]?.some(c => c.userId === user?.id)), 
       assignedTo: assignmentsMap[t.id] ?? [],
       dueDate: t.due_date,
       frequency: t.frequency,
@@ -123,17 +123,36 @@ export default function TaskCalendar() {
     if (!user?.id) return;
     const jaCompletada = (task.completedBy ?? []).some(c => c.userId === user.id);
 
+    // Obtenir punts actuals de l'usuari
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('points')
+      .eq('id', user.id)
+      .single();
+    const puntsActuals = profile?.points ?? 0;
+
     if (!jaCompletada) {
-      await supabase.from('completions').insert({
+      await supabase
+      .from('completions')
+      .insert({
         task_id: task.id,
         user_id: user.id,
         completed_at: new Date().toISOString(),
       });
+      await supabase
+        .from('profiles')
+        .update({ points: puntsActuals + task.points })
+        .eq('id', user.id);
     } else {
-      await supabase.from('completions')
+      await supabase
+        .from('completions')
         .delete()
         .eq('task_id', task.id)
         .eq('user_id', user.id);
+        await supabase
+        .from('profiles')
+        .update({ points: Math.max(puntsActuals - task.points, 0) })
+        .eq('id', user.id);
     }
     fetchTasks();
     

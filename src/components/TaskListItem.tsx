@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import type { Task, User } from '@/types';
 import { View, Text, Image, Pressable } from 'react-native';
 import { CheckCircleIcon, ClockIcon, PencilIcon } from 'react-native-heroicons/outline';
@@ -11,6 +11,10 @@ type Props = {
 };
 
 export default function TaskListItem({ task, onToggleComplete, userId }: Props) {
+  const [isCompleted, setIsCompleted] = useState(task.completed);
+  useEffect(() => {
+    setIsCompleted(task.completed);
+  }, [task.completed]);
   const router = useRouter();
   const due = new Date(task.dueDate).toLocaleDateString('ca-ES', {
     day: 'numeric',
@@ -72,11 +76,15 @@ export default function TaskListItem({ task, onToggleComplete, userId }: Props) 
           <Text className="text-xs text-ocre">pts</Text>
         </View>
         <Pressable
-          onPress={() => potMarcar && onToggleComplete?.(task)}
+          onPress={() => {
+            if (!potMarcar) return;
+            setIsCompleted(!isCompleted);
+            onToggleComplete?.(task);
+          }}
           disabled={!potMarcar}
           className={`rounded-full p-1 ${potMarcar ? 'opacity-100' : 'opacity-40'}`}
         >
-          {task.completed
+          {isCompleted
             ? <CheckCircleIcon size={28} color="#22c55e" />
             : <ClockIcon       size={28} color="#D98C38" />}
         </Pressable>

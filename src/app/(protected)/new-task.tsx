@@ -42,7 +42,7 @@ export default function NewTaskScreen() {
   const [dueDate, setDueDate] = useState(new Date().toISOString().slice(0,10)); // Format YYYY-MM-DD
   
   
-  // Actualitza groupId quan canvii el param o el context!
+  // Actualitza groupId quan canvii el param o el context
   useEffect(() => {
     if (groupIdParam) setGroupId(groupIdParam);
     else if (currentGroupId) setGroupId(currentGroupId);

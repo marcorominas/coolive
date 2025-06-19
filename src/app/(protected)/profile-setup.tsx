@@ -13,6 +13,8 @@ import {
   ScrollView,
   TouchableOpacity,
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
+
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/AuthProvider';
 import { useRouter } from 'expo-router';
@@ -82,8 +84,29 @@ export default function ProfileSetupScreen() {
       };
       if (bio.trim() !== '') updates.bio = bio;
       // Desa l'avatar random només si no n'hi ha cap altre (opcional)
-      updates.avatar_url = avatarUrl || defaultAvatarUrl;
+      //updates.avatar_url = avatarUrl || defaultAvatarUrl;
+      let finalAvatarUrl = avatarUrl;
+      if (avatarUrl && avatarUrl.startsWith('file://')) {
+        const fileExt = avatarUrl.split('.').pop();
+        const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+        const response = await fetch(avatarUrl);
+        const blob = await response.blob();
+        const { error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(fileName, blob, { contentType: blob.type });
 
+        if (uploadError) {
+          Alert.alert('Error pujant la imatge', uploadError.message);
+          return;
+        }
+
+        const { data } = supabase.storage.from('avatars').getPublicUrl(fileName);
+        finalAvatarUrl = data.publicUrl;
+        setAvatarUrl(finalAvatarUrl);
+      }
+
+      // Desa l'avatar random només si no n'hi ha cap altre
+      updates.avatar_url = finalAvatarUrl || defaultAvatarUrl;
       const { error: upsertError } = await supabase.from('profiles').upsert(updates);
       if (upsertError) {
         Alert.alert('Error desant el perfil:', upsertError.message);
@@ -102,6 +125,46 @@ export default function ProfileSetupScreen() {
     setSeed(newSeed);
     setAvatarUrl(''); // buidem per assegurar que canvia
   };
+  const pickFromCamera = async () => {
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (permission.status !== 'granted') {
+      Alert.alert('Permís de càmera denegat');
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 0.7,
+    });
+    if (!result.canceled) {
+      setAvatarUrl(result.assets[0].uri);
+    }
+  };
+
+  const pickFromGallery = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (permission.status !== 'granted') {
+      Alert.alert('Permís de galeria denegat');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 0.7,
+    });
+    if (!result.canceled) {
+      setAvatarUrl(result.assets[0].uri);
+    }
+  };
+
+  const handleChoosePhoto = () => {
+    Alert.alert('Selecciona origen', '', [
+      { text: 'Càmera', onPress: () => pickFromCamera() },
+      { text: 'Galeria', onPress: () => pickFromGallery() },
+      { text: 'Cancel·la', style: 'cancel' },
+    ]);
+  };
+
 
 
   return (
@@ -133,7 +196,11 @@ export default function ProfileSetupScreen() {
                     />
                   </View>
               </TouchableOpacity>
-            
+            {/* Botó per triar foto */}
+            <Pressable onPress={handleChoosePhoto} className="mt-2 p-2 bg-ocre rounded">
+                <Text className="text-blanc-pur">Choose Photo</Text>
+            </Pressable>
+                    
 
             {/* Camps de text: Nom complet i Bio */}
             <View className="space-y-4">
