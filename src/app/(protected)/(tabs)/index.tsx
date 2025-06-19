@@ -40,7 +40,7 @@ export default function HomeScreen() {
       points: 2,
       completed: false,
       assignedTo: [
-        { id: 'u1', username: 'marina123', name: 'Marina', image: 'https://i.pravatar.cc/150?img=1' }
+        { id: 'u1', name: 'Marina', image: 'https://i.pravatar.cc/150?img=1' }
       ],
       dueDate: new Date().toISOString(),
       frequency: 'once',
@@ -55,7 +55,7 @@ export default function HomeScreen() {
       points: 3,
       completed: false,
       assignedTo: [
-        { id: 'u2', username: 'albert', name: 'Albert', image: 'https://i.pravatar.cc/150?img=2' }
+        { id: 'u2', name: 'Albert', image: 'https://i.pravatar.cc/150?img=2' }
       ],
       dueDate: new Date().toISOString(),
       frequency: 'weekly',
