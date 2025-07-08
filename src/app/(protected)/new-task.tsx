@@ -17,12 +17,12 @@ import { useAuth } from '@/providers/AuthProvider';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useGroup } from '@/providers/GroupProvider';
 
-const frequencyOptions = [
+{/*const frequencyOptions = [
   { key: 'once', label: 'Un cop' },
   { key: 'daily', label: 'Diari' },
   { key: 'weekly', label: 'Setmanal' },
   { key: 'monthly', label: 'Mensual' },
-];
+];/*/}
 
 export default function NewTaskScreen() {
   const router = useRouter();
@@ -35,7 +35,7 @@ export default function NewTaskScreen() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [points, setPoints] = useState('1');
-  const [frequency, setFrequency] = useState('once');
+  //const [frequency, setFrequency] = useState('once');
   const [assignedUser, setAssignedUser] = useState<string>('');
   const [members, setMembers] = useState<{ id: string; name: string }[]>([]);
   const [loadingMembers, setLoadingMembers] = useState(true);
@@ -49,7 +49,7 @@ export default function NewTaskScreen() {
     else setGroupId(undefined);
   }, [groupIdParam, currentGroupId]);
 
-  // Carrega membres del grup (només si tenim groupId!)
+  // Carrega membres del grup (només si tenim groupId)
   useEffect(() => {
     const fetchMembers = async () => {
       setLoadingMembers(true);
@@ -91,7 +91,7 @@ export default function NewTaskScreen() {
       assignedUser,
       groupId,
       userId: user?.id,
-      frequency,
+      //frequency,
     });
     // Validació reforçada
     if (!title || !description || !points || !assignedUser || !groupId || !user?.id) {
@@ -110,7 +110,7 @@ export default function NewTaskScreen() {
         points: Number(points),
         completed: false,
         due_date: dueDate,
-        frequency,
+        //frequency,
       })
       .select()
       .single();
@@ -231,7 +231,7 @@ export default function NewTaskScreen() {
               <Text className="text-xs text-gray-500">Format: AAAA-MM-DD</Text>
             </View>
 
-            {/* Freqüència */}
+            {/* Freqüència 
             <View className="mb-4">
               <Text className="text-base font-medium mb-1 text-marro-fosc">
                 Freqüència
@@ -260,6 +260,7 @@ export default function NewTaskScreen() {
                 ))}
               </View>
             </View>
+            */}
             {/* Assignació d’usuari */}
             <View className="mb-4">
               <Text className="text-base font-medium mb-1 text-marro-fosc">

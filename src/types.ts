@@ -53,3 +53,10 @@ export type Completion = {
   userId: string
   completedAt: string
 }
+
+export type TaskAssignment = {
+  id: string
+  taskId: string
+  userId: string
+  assignedAt: string
+}   

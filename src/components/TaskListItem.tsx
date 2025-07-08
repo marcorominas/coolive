@@ -11,11 +11,12 @@ type Props = {
 };
 
 export default function TaskListItem({ task, onToggleComplete, userId }: Props) {
+  const router = useRouter();
   const [isCompleted, setIsCompleted] = useState(task.completed);
   useEffect(() => {
     setIsCompleted(task.completed);
   }, [task.completed]);
-  const router = useRouter();
+  
   const due = new Date(task.dueDate).toLocaleDateString('ca-ES', {
     day: 'numeric',
     month: 'short',

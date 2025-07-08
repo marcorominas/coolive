@@ -93,7 +93,7 @@ export default function HomeScreen() {
         createdAt: t.created_at,
         groupId: t.group_id,
         points: t.points,
-        completed: !!(completionsMap[t.id]?.length),
+        completed: !!(completionsMap[t.id]?.some(c => c.userId === user?.id)),
         assignedTo: assignmentsMap[t.id] ?? [],
         dueDate: t.due_date,
         frequency: t.frequency,

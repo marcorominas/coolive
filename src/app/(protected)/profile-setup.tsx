@@ -1,4 +1,3 @@
-// ─── src/app/(protected)/(tabs)/profile-setup.tsx ───────────────────
 
 import React, { useState, useEffect } from 'react';
 import {
@@ -132,7 +131,7 @@ export default function ProfileSetupScreen() {
       return;
     }
     const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: [ImagePicker.MediaType.IMAGE],     
       allowsEditing: true,
       quality: 0.7,
     });
@@ -141,14 +140,14 @@ export default function ProfileSetupScreen() {
     }
   };
 
-  const pickFromGallery = async () => {
+  const pickImageAsync = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (permission.status !== 'granted') {
       Alert.alert('Permís de galeria denegat');
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: [ImagePicker.MediaType.IMAGE],
       allowsEditing: true,
       quality: 0.7,
     });
@@ -160,7 +159,7 @@ export default function ProfileSetupScreen() {
   const handleChoosePhoto = () => {
     Alert.alert('Selecciona origen', '', [
       { text: 'Càmera', onPress: () => pickFromCamera() },
-      { text: 'Galeria', onPress: () => pickFromGallery() },
+      { text: 'Galeria', onPress: () => pickImageAsync() },
       { text: 'Cancel·la', style: 'cancel' },
     ]);
   };
