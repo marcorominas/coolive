@@ -17,16 +17,15 @@ export default function AuthLayout() {
   // Si no està autenticat, renderitzem la Stack amb /login i /signup
   return (
     <Stack initialRouteName="login">
+             
+
       <Stack.Screen
         name="login"
         options={{ headerShown: false }}
       />
       <Stack.Screen
         name="signup"
-        options={{
-          title: 'Sign Up',
-          headerBackButtonDisplayMode: 'minimal',
-        }}
+        options={{ headerShown: false }}
       />
     </Stack>
   );

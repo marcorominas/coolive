@@ -2,6 +2,10 @@
 
 import React, { useState } from 'react';
 import {
+  SafeAreaView,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
   View,
   Text,
   TextInput,
@@ -11,6 +15,9 @@ import {
 } from 'react-native';
 import { Link, useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
+
+
+
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -39,26 +46,33 @@ export default function LoginScreen() {
     }
   };
 
-  const handleGoogleSignIn = async () => {
-    // Exemple bàsic de sign in amb Google a Supabase
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({ provider: 'google' });
-      if (error) {
-        Alert.alert('Error (Google):', error.message);
-      }
-    } catch (err: any) {
-      console.error('Google SignIn Error:', err);
-      Alert.alert('Error inesperat amb Google Sign In');
-    }
-  };
 
   return (
-    <View className="flex-1 bg-beix-clar items-center px-6 pt-16">
-      {/* Logo / Splash */}
+    <SafeAreaView className="flex-1 bg-beige">
+      <KeyboardAvoidingView
+        className="flex-1"
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 20}
+    >
+
+    
+    <ScrollView contentContainerStyle={{ 
+        flexGrow: 1,
+        justifyContent: 'center',
+        paddingHorizontal: 24,
+        paddingVertical: 20,
+        paddingBottom: Platform.OS === 'ios' ? 120 : 20,
+       }} 
+       keyboardShouldPersistTaps="handled"
+    >
+    <View className="flex-1 bg-beige items-center justify-center">
+
+      {/* Logo*/}
       <View className="items-center mb-12">
+        <Text className="font-heading text-2xl font-bold text-brown m-8">Benvingut/da de nou!</Text>
         <Image
           source={require('../../../assets/LIVE.png')} 
-          className="w-36 h-36"
+          className="w-60 h-60 rounded"
           resizeMode="contain"
         />
       </View>
@@ -66,10 +80,10 @@ export default function LoginScreen() {
       {/* Form */}
       <View className="w-full max-w-md space-y-6">
         <View>
-          <Text className="text-sm font-medium text-marron-fosc mb-1">Email</Text>
+          <Text className="text-sm font-medium text-brown mb-1">Email</Text>
           <TextInput
-            className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-marron-fosc"
-            placeholder="Enter your email"
+            className="w-full px-4 py-3 mb-5 bg-white border border-gray-300 rounded-lg text-brown"
+            placeholder="Introdueix email"
             placeholderTextColor="#A08C7A"
             keyboardType="email-address"
             autoCapitalize="none"
@@ -78,10 +92,10 @@ export default function LoginScreen() {
           />
         </View>
         <View>
-          <Text className="text-sm font-medium text-marron-fosc mb-1">Password</Text>
+          <Text className="text-sm font-medium text-brown mb-1">Contasenya</Text>
           <TextInput
-            className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-marron-fosc"
-            placeholder="Enter your password"
+            className="w-full px-4 py-3 mb-5 bg-white border border-gray-300 rounded-lg text-brown"
+            placeholder="Introdueix contrasenya "
             placeholderTextColor="#A08C7A"
             secureTextEntry
             value={password}
@@ -90,40 +104,31 @@ export default function LoginScreen() {
         </View>
 
         <TouchableOpacity
-          className="w-full bg-ocre py-3 rounded-lg items-center"
+          className="w-full bg-orange py-3 mt-6 mb-4 rounded-lg items-center"
           activeOpacity={0.8}
           onPress={handleLogin}
           disabled={isLoading}
         >
-          <Text className="text-blanc-pur font-semibold">
-            {isLoading ? 'Logging in...' : 'Log In'}
+          <Text className="text-white font-semibold">
+            {isLoading ? 'Iniciant sessió...' : 'Iniciar Sessió'}
           </Text>
         </TouchableOpacity>
 
         <View className="flex-row justify-center">
-          <Text className="text-marron-fosc">No tens compte? </Text>
+          <Text className="text-brown">No tens compte? </Text>
           <Link href="/signup" asChild>
             <TouchableOpacity>
-              <Text className="text-ocre font-medium">Create an Account</Text>
+              <Text className="text-orange font-medium">Crear una compte</Text>
             </TouchableOpacity>
           </Link>
         </View>
 
-        <Text className="text-center text-marron-fosc">OR</Text>
 
-        <TouchableOpacity
-          className="w-full bg-white border border-gray-300 flex-row items-center justify-center py-3 rounded-lg"
-          activeOpacity={0.8}
-          onPress={handleGoogleSignIn}
-        >
-          <Image
-            source={require('../../../assets/google-icon.png')} // posa el teu icona de Google
-            className="w-6 h-6 mr-2"
-            resizeMode="contain"
-          />
-          <Text className="text-marron-fosc font-medium">Sign In With Google</Text>
-        </TouchableOpacity>
+        
       </View>
     </View>
+    </ScrollView>
+    </KeyboardAvoidingView>
+    </SafeAreaView> 
   );
 }

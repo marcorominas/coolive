@@ -103,6 +103,9 @@ export default function ProfileScreen() {
   const handleSignOut = async () => {
     setSigningOut(true);
     await supabase.auth.signOut();
+    await AsyncStorage.removeItem('currentGroupId');
+    setCurrentGroupId('');
+    // Esborra l'usuari de l'AuthProvider
     setSigningOut(false);
     router.replace('/login');
   };
@@ -196,7 +199,7 @@ export default function ProfileScreen() {
           className="mt-4 w-2/6 rounded-lg py-3 items-center bg-marro-fosc"
           disabled={signingOut}
         >
-          <Text className="text-blanc-pur font-medium">
+          <Text className="text-marron-fosc font-medium">
             {signingOut ? 'Surt...' : 'Sign Out'}
           </Text>
         </Pressable>

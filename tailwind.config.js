@@ -6,11 +6,17 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        'beix-clar': '#F5F1E9',   
-        'ocre': '#D98C38',       
-        'marron-fosc': '#3E2C2A',
-        'blanc-pur': '#FFFFFF',  
-      }     
+        'beige': '#F5F1E9',   
+        'orange': '#D98C38',       
+        'brown': '#3E2C2A',
+        'white': '#FFFFFF',  
+      },
+      fontFamily: {
+        // Font per defecte per al text corrent
+        sans: ['Inter', 'sans-serif'],
+        // Font específica per a títols i headers
+        heading: ['Poppins', 'sans-serif'],
+      },     
     },
   },
   plugins: [],

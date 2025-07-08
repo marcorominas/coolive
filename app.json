@@ -3,7 +3,11 @@
     "name": "coolive",
     "slug": "coolive",
     "scheme": "my-coolive",
-    "platforms": ["ios", "android", "web"],
+    "platforms": [
+      "ios",
+      "android",
+      "web"
+    ],
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/LIVE.png",
@@ -16,7 +20,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.tuempresa.coolive",
+      "bundleIdentifier": "coolive.com",
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "Necessitem accedir a la galeria per pujar la teva foto de perfil",
         "NSCameraUsageDescription": "Necessitem la càmera per fer fotos de perfil"
@@ -28,7 +32,7 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.trabajo.coolive"
+      "package": "coolive.com"
     },
     "web": {
       "favicon": "./assets/favicon.png",
@@ -41,7 +45,8 @@
         {
           "photosPermission": "The app accesses your photos to let you share them with your friends."
         }
-      ]
+      ],
+      "expo-web-browser"
     ]
   }
 }
