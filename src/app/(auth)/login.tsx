@@ -15,8 +15,7 @@ import {
 } from 'react-native';
 import { Link, useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
-
-
+import Button from '@/components/Button';
 
 
 export default function LoginScreen() {
@@ -103,16 +102,12 @@ export default function LoginScreen() {
           />
         </View>
 
-        <TouchableOpacity
-          className="w-full bg-orange py-3 mt-6 mb-4 rounded-lg items-center"
-          activeOpacity={0.8}
+        <Button
+          title="Iniciar Sessió"
           onPress={handleLogin}
-          disabled={isLoading}
-        >
-          <Text className="text-white font-semibold">
-            {isLoading ? 'Iniciant sessió...' : 'Iniciar Sessió'}
-          </Text>
-        </TouchableOpacity>
+          isLoading={isLoading}
+        />
+
 
         <View className="flex-row justify-center">
           <Text className="text-brown">No tens compte? </Text>

@@ -1,21 +1,19 @@
-// src/app/(protected)/(tabs)/join.tsx
-
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, Pressable, Alert } from 'react-native';
+import { View, Text, TextInput, Alert } from 'react-native';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/AuthProvider';
 import { useRouter } from 'expo-router';
-import { useLocalSearchParams } from 'expo-router';
 import { useGroup } from '@/providers/GroupProvider';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Button from '@/components/Button';
 
 export default function JoinGroupScreen() {
   const { user, isAuthenticated } = useAuth();
   const router = useRouter();
-  const params = useLocalSearchParams<{ groupId?: string }>();
-  const [joinId, setJoinId] = useState(params.groupId || '');
+  const { setCurrentGroupId } = useGroup();
+
+  const [joinCode, setJoinCode] = useState('');
   const [loadingJoin, setLoadingJoin] = useState(false);
-  const { setCurrentGroupId } = useGroup(); 
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -24,104 +22,83 @@ export default function JoinGroupScreen() {
   }, [isAuthenticated]);
 
   const handleJoinGroup = async () => {
-    if (!joinId.trim()) {
+    if (!joinCode.trim()) {
       Alert.alert('Introdueix un codi de grup vàlid.');
       return;
     }
-    console.log('joinId (trim):', joinId.trim());
 
     try {
       setLoadingJoin(true);
-      // 1. Comprovar que el grup existeix
-      const { data: group, error: groupError } = await supabase
-        .from('groups')
-        .select('id')
-        .eq('id', joinId.trim())
-        .single();
-      console.log('group:', group, 'groupError:', groupError);
 
-      if (groupError || !group) {
+      // Buscar coincidència comparant els primers 6 caràcters de l'ID
+      const { data: groups } = await supabase
+        .from('groups')
+        .select('id');
+
+      const group = groups?.find(g =>
+        g.id.replace(/-/g, '').slice(0, 6) === joinCode.trim()
+      );
+
+      if (!group) {
         Alert.alert('Aquest grup no existeix.');
-        setLoadingJoin(false);
         return;
       }
 
-      // 2. Comprovar si l’usuari ja és membre (per evitar duplicats)
-      const { data: existing, error: existError } = await supabase
+      const groupId = group.id;
+
+      // Comprovar si l’usuari ja és membre
+      const { data: existing } = await supabase
         .from('group_members')
         .select('id')
-        .eq('group_id', joinId.trim())
+        .eq('group_id', groupId)
         .eq('user_id', user!.id)
-        .single();
-
-      
+        .maybeSingle();
 
       if (existing) {
         Alert.alert('Ja ets membre d’aquest grup.');
-        setLoadingJoin(false);
         return;
       }
 
-      // 3. Inserir registre a 'group_members'
+      // Inserir l’usuari al grup
       const { error: memberError } = await supabase
-      .from('group_members')
-      .insert({
-        group_id: joinId.trim(),
-        user_id: user!.id,
-      });
+        .from('group_members')
+        .insert({ group_id: groupId, user_id: user!.id });
 
-      if (!memberError) {
-      await AsyncStorage.setItem('currentGroupId', joinId.trim());
-      setCurrentGroupId(joinId.trim());
+      if (memberError) throw memberError;
+
+      await AsyncStorage.setItem('currentGroupId', groupId);
+      setCurrentGroupId(groupId);
+
       Alert.alert('✅ T’has unit al grup correctament!');
       router.replace('/profile');
-}
-
-      if (memberError) {
-        console.error('Error unint‐te al grup:', memberError);
-        Alert.alert('No s’ha pogut unir‐te al grup.');
-      } else {
-        Alert.alert('✅ T’has unit al grup correctament!');
-        router.replace('/'); 
-      }
     } catch (err) {
-      console.error('Error inesperat al unir‐te al grup:', err);
-      Alert.alert('Error inesperat.');
+      console.error('Error unint-te al grup:', err);
+      Alert.alert('Error inesperat en unir-te al grup.');
     } finally {
       setLoadingJoin(false);
     }
   };
 
   return (
-    <View className="flex-1 bg-beix-clar p-4">
-      
-
-      <View className="mt-6 space-y-4">
-        <View>
-          <Text className="text-sm font-medium text-marron-fosc mb-1">Codi del Grup</Text>
-          <TextInput
-            value={joinId}
-            onChangeText={setJoinId}
-            placeholder="Ex: 4832d2b8-68f2-40f0-bc8b-ebff71d91ae9"
-            placeholderTextColor="#A08C7A"
-            autoCapitalize="none"
-            className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-marron-fosc"
-          />
-        </View>
-
-        
-        
-        <Pressable
+    <View className="flex-1 bg-beige p-4">
+      <Text className="text-2xl font-heading font-bold text-brown">Unir-me a un Grup</Text>
+      <View className="mt-6">
+        <Text className="text-sm font-sans text-brown mb-1">Codi del Grup</Text>
+        <TextInput
+          value={joinCode}
+          onChangeText={setJoinCode}
+          placeholder="Ex: 4a8b5d"
+          placeholderTextColor="#A08C7A"
+          autoCapitalize="none"
+          className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-brown font-sans"
+        />
+      </View>
+      <View className="mt-6">
+        <Button
+          title={loadingJoin ? 'Processant...' : 'Unir-me'}
           onPress={handleJoinGroup}
-          className={`w-full rounded-lg py-3 items-center ${
-            loadingJoin ? 'bg-gray-400' : 'bg-marron-fosc'
-          }`}
-          disabled={loadingJoin}
-        >
-          <Text className="text-blanc-pur font-semibold">
-            {loadingJoin ? 'Procesant...' : 'Unir‐me'}
-          </Text>
-        </Pressable>
+          isLoading={loadingJoin}
+        />
       </View>
     </View>
   );

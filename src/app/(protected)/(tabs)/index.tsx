@@ -80,9 +80,9 @@ export default function HomeScreen() {
         if (!completionsMap[row.task_id]) completionsMap[row.task_id] = [];
         completionsMap[row.task_id].push({
           id: '',
-          taskId: row.task_id,
-          userId: row.user_id,
-          completedAt: row.completed_at,
+          task_id: row.task_id,
+          user_id: row.user_id,
+          completed_at: row.completed_at,
         });
       });
 
@@ -90,10 +90,10 @@ export default function HomeScreen() {
         id: t.id,
         title: t.title,
         description: t.description,
-        createdAt: t.created_at,
+        created_at: t.created_at,
         groupId: t.group_id,
         points: t.points,
-        completed: !!(completionsMap[t.id]?.some(c => c.userId === user?.id)),
+        completed: !!(completionsMap[t.id]?.some(c => c.user_id === user?.id)),
         assignedTo: assignmentsMap[t.id] ?? [],
         dueDate: t.due_date,
         frequency: t.frequency,
@@ -102,7 +102,7 @@ export default function HomeScreen() {
 
       const todayString = new Date().toLocaleDateString('ca-ES');
       const todayTasks = tasksList.filter(
-        task => new Date(task.dueDate).toLocaleDateString('ca-ES') === todayString
+        task => !!task.due_date && new Date(task.due_date).toLocaleDateString('ca-ES') === todayString
       );
 
       setTasksToday(todayTasks);

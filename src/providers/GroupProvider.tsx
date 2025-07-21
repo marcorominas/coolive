@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthProvider';
 import { supabase } from '@/lib/supabase';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type GroupContextType = {
   currentGroupId: string | null;
@@ -18,39 +19,49 @@ export const useGroup = () => {
 };
 
 export const GroupProvider = ({ children }: { children: React.ReactNode }) => {
-  const [currentGroupId, setCurrentGroupId] = useState<string | null>(null);
+  const [currentGroupId, setCurrentGroupIdState] = useState<string | null>(null);
   const { user } = useAuth();
 
-  useEffect(() => {
-  // No fem res si l'usuari encara no està carregat
-  if (!user) {
-    setCurrentGroupId(null);
-    return;
-  }
-
-  const fetchCurrentGroup = async () => {
-    const { data, error } = await supabase
-      .from('group_members')
-      .select('group_id')
-      .eq('user_id', user.id)
-      .single();
-
-    if (error) {
-      console.error('Error fetching group:', error);
-      setCurrentGroupId(null);
-      return;
-    }
-
-    if (data && data.group_id) {
-      setCurrentGroupId(data.group_id);
+  const setCurrentGroupId = async (id: string | null) => {
+    setCurrentGroupIdState(id);
+    if (id) {
+      await AsyncStorage.setItem('currentGroupId', id);
     } else {
-      setCurrentGroupId(null);
+      await AsyncStorage.removeItem('currentGroupId');
     }
   };
 
-  fetchCurrentGroup();
-}, [user]);
+  useEffect(() => {
+    const fetchCurrentGroup = async () => {
+      if (!user) {
+        setCurrentGroupId(null);
+        return;
+      }
 
+      // 1️⃣ Primer, mirar AsyncStorage (més ràpid)
+      const storedGroupId = await AsyncStorage.getItem('currentGroupId');
+      if (storedGroupId) {
+        setCurrentGroupIdState(storedGroupId);
+        return;
+      }
+
+      // 2️⃣ Si no hi ha res a AsyncStorage, consultar Supabase
+      const { data } = await supabase
+        .from('group_members')
+        .select('group_id')
+        .eq('user_id', user.id)
+        .limit(1)
+        .maybeSingle();
+
+      if (data?.group_id) {
+        await setCurrentGroupId(data.group_id);
+      } else {
+        setCurrentGroupId(null);
+      }
+    };
+
+    fetchCurrentGroup();
+  }, [user]);
 
   return (
     <GroupContext.Provider value={{ currentGroupId, setCurrentGroupId }}>

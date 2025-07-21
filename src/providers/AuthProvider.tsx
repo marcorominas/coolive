@@ -1,11 +1,8 @@
-// This file is part of the Expo Router app structure.
-// It provides authentication context to the app, allowing components to access user information and authentication status.
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { ActivityIndicator } from 'react-native';
 import { View } from 'react-native';
-// This file provides the AuthContext and AuthProvider for managing user authentication state in a React application using Supabase.
 
 type AuthContextType = {
   user: User | null;

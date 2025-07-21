@@ -9,14 +9,24 @@ export default function ProtectedLayout() {
   }
 
   return (
-    <Stack>
-      <Stack.Screen name='(tabs)' options={{ headerShown: false }} />
-      <Stack.Screen name='new-task'  
-        options={{ 
-          title: 'New Task',
-          presentation: 'modal',
-          animation: 'slide_from_bottom'
-         }} />
-    </Stack>
-  );
+  <Stack>
+    <Stack.Screen 
+      name="(tabs)" 
+      options={{ headerShown: false }} 
+    />
+    <Stack.Screen 
+      name="profile-setup" 
+      options={{ headerShown: false }} 
+    />
+    <Stack.Screen 
+      name="new-task"  
+      options={{ 
+        title: 'New Task',
+        presentation: 'modal',
+        animation: 'slide_from_bottom'
+      }} 
+    />
+  </Stack>
+);
+
 }

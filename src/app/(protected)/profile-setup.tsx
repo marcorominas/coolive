@@ -4,18 +4,20 @@ import {
   Text,
   TextInput,
   Image,
-  Pressable,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  TouchableOpacity,
+  Alert,
 } from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
-
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/AuthProvider';
 import { useRouter } from 'expo-router';
+import Button from '@/components/Button';
+
+function getRandomAvatar(seed?: string) {
+  const randomSeed = seed || Math.random().toString(36).slice(2);
+  return `https://api.dicebear.com/6.x/avataaars/png?seed=${randomSeed}`;
+}
 
 export default function ProfileSetupScreen() {
   const { user, isAuthenticated } = useAuth();
@@ -23,15 +25,14 @@ export default function ProfileSetupScreen() {
   const [fullName, setFullName] = useState('');
   const [bio, setBio] = useState('');
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
-  // Redirigeix si no està autenticat
   useEffect(() => {
     if (!isAuthenticated) {
       router.replace('/login');
     }
   }, [isAuthenticated]);
 
-  // Carrega dades existents de l'usuari
   useEffect(() => {
     if (user) {
       (async () => {
@@ -40,92 +41,56 @@ export default function ProfileSetupScreen() {
           .select('full_name, bio, avatar_url')
           .eq('id', user.id)
           .single();
-        if (data) {
-          setFullName(data.full_name || '');
-          setBio(data.bio || '');
-          setAvatarUrl(data.avatar_url);
-        }
+        setFullName(data?.full_name || '');
+        setBio(data?.bio || '');
+        setAvatarUrl(data?.avatar_url || getRandomAvatar(user.id));
       })();
     }
   }, [user]);
 
-  // Desa o actualitza el perfil a Supabase
   const handleSaveProfile = async () => {
-    if (!fullName.trim()) {
+    if (!fullName.trim() || !user) {
       Alert.alert('El camp “Nom complet” és obligatori');
       return;
     }
-    if (!user) {
-      Alert.alert('Error: usuari no carregat.');
-      return;
-    }
+
+    setSaving(true);
 
     try {
-      let finalAvatarUrl = avatarUrl;
+      const finalAvatarUrl = avatarUrl || getRandomAvatar(user.id);
 
-      // Si l'URL comença amb file://, puja la imatge
-      if (avatarUrl?.startsWith('file://')) {
-        const fileExt = avatarUrl.split('.').pop();
-        const fileName = `${user.id}-${Date.now()}.${fileExt}`;
-        const response = await fetch(avatarUrl);
-        const blob = await response.blob();
-        const { error: uploadError } = await supabase.storage
-          .from('profilephotos')
-          .upload(fileName, blob, { contentType: blob.type });
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('points')
+        .eq('id', user.id)
+        .single();
 
-        if (uploadError) {
-          Alert.alert('Error pujant la imatge', uploadError.message);
-          return;
-        }
-
-        const { data } = supabase.storage.from('profilephotos').getPublicUrl(fileName);
-        finalAvatarUrl = data.publicUrl;
-        setAvatarUrl(finalAvatarUrl);
-      }
+      const currentPoints = profileData?.points ?? 0;
 
       const updates = {
         id: user.id,
-        full_name: fullName,
+        full_name: fullName.trim(),
         bio: bio.trim() !== '' ? bio : null,
         avatar_url: finalAvatarUrl,
+        points: currentPoints,
         updated_at: new Date().toISOString(),
       };
+
       const { error: upsertError } = await supabase.from('profiles').upsert(updates);
-      if (upsertError) {
-        Alert.alert('Error desant el perfil:', upsertError.message);
-      } else {
-        Alert.alert('Perfil desat correctament!');
-        router.replace('/profile');
-      }
-    } catch (err: any) {
-      console.error(err);
-      Alert.alert('Error inesperat guardant el perfil');
+      if (upsertError) throw upsertError;
+
+      Alert.alert('✅ Perfil desat correctament!');
+      router.replace(`/profile?refresh=${Date.now()}`);
+    } catch (err) {
+      console.error('Error desant el perfil:', err);
+      Alert.alert('Error inesperat en desar el perfil');
+    } finally {
+      setSaving(false);
     }
   };
 
-  const pickImageAsync = async () => {
-    try {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permís de galeria denegat');
-        return;
-      }
-
-      const result = await ImagePicker.launchImageLibraryAsync({
-        // Use 'mediaTypes' with an array of allowed types
-        mediaTypes: ['images'],
-        allowsEditing: true,
-        aspect: [1, 1], // crop quadrat
-        quality: 0.7,
-      });
-
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-        setAvatarUrl(result.assets[0].uri);
-      }
-    } catch (error: any) {
-      console.error('pickImageAsync error:', error);
-      Alert.alert('Error obrint la galeria');
-    }
+  const handleNewAvatar = () => {
+    setAvatarUrl(getRandomAvatar());
   };
 
   return (
@@ -136,32 +101,23 @@ export default function ProfileSetupScreen() {
     >
       <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
         <View className="flex-1 bg-beige">
-          {/* Header */}
           <View className="flex-row items-center justify-center py-4 bg-orange">
             <Text className="text-2xl font-heading font-bold text-white">Editar Perfil</Text>
           </View>
-
-          {/* Contingut principal */}
           <View className="p-4 space-y-6">
-            {/* Vista per afegir només imatge */}
-            <TouchableOpacity onPress={pickImageAsync} className="items-center mb-4">
-              {avatarUrl ? (
-                <Image
-                  source={{ uri: avatarUrl }}
-                  className="w-28 h-28 rounded-full"
-                  resizeMode="cover"
-                />
-              ) : (
-                <View className="w-28 h-28 rounded-full bg-brown items-center justify-center">
-                  <Text className="text-sm text-gray-500">Afegeix imatge</Text>
-                </View>
-              )}
-            </TouchableOpacity>
-
-            {/* Camps de text: Nom complet i Bio */}
-            <View className="space-y-4">
+            <View className="items-center mb-3">
+              <Image
+                source={{ uri: avatarUrl || getRandomAvatar(user?.id) }}
+                className="w-28 h-28 rounded-full mb-2"
+                resizeMode="cover"
+              />
+              <Button title="Canvia Avatar" onPress={handleNewAvatar} />
+            </View>
+            <View className="space-y-4 mb-3">
               <View>
-                <Text className="text-sm font-sans text-semibold text-brown mb-1">Nom complet</Text>
+                <Text className="text-medium font-sans text-semibold text-brown mb-1">
+                  Nom complet
+                </Text>
                 <TextInput
                   value={fullName}
                   onChangeText={setFullName}
@@ -171,7 +127,7 @@ export default function ProfileSetupScreen() {
                 />
               </View>
               <View>
-                <Text className="text-sm font-sans text-semibold text-brown mb-1">Bio</Text>
+                <Text className="text-m font-sans text-semibold text-brown mb-1">Bio</Text>
                 <TextInput
                   value={bio}
                   onChangeText={setBio}
@@ -183,14 +139,11 @@ export default function ProfileSetupScreen() {
                 />
               </View>
             </View>
-
-            {/* Botó Desa */}
-            <Pressable
+            <Button
+              title={saving ? 'Desant...' : 'Desa Canvis'}
               onPress={handleSaveProfile}
-              className="w-full rounded-lg py-3 items-center mt-4 bg-ocre"
-            >
-              <Text className="text-blanc-pur font-semibold">Desa Canvis</Text>
-            </Pressable>
+              isLoading={saving}
+            />
           </View>
         </View>
       </ScrollView>

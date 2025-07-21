@@ -1,62 +1,53 @@
 // src/types.ts
 
-export type User = {
-  id: string
-  name: string
-  image: string
-  bio?: string
-  // maybe track current points if you want to render a podium
-  points?: number
-}
-
-// A “flat” object for a shared household / project / group
-// This is the main entity that users will interact with
-export type Group = {
-  id: string
-  name: string
-  createdBy: string        // User.id of the creator
-  members: User[]          // list of users in this group
-  createdAt: string
-}
-// A “join” record for a user in a group    
-// This is a many-to-many relationship between User and Group
-export type GroupMember = {
-  id: string;
-  group_id: string;
-  user_id: string;
-  joined_at: string;
+export type Profile = {
+  id: string;                // PK - mateix que auth.users.id
+  full_name: string | null;  // nom complet
+  avatar_url: string | null; // URL de l'avatar
+  bio: string | null;        // descripció curta
+  points: number;            // punts acumulats
+  updated_at?: string | null;
 };
 
+export type Group = {
+  id: string;                // PK
+  name: string;              // nom del grup
+  created_by: string;        // FK cap a profiles.id (creador)
+  created_at: string;        // data de creació
+};
 
-// The core “task” or “chore” item
+export type GroupMember = {
+  id: string;                // PK
+  group_id: string;          // FK cap a groups.id
+  user_id: string;           // FK cap a profiles.id
+  joined_at: string;         // data quan es va unir al grup
+};
+
 export type Task = {
-  id: string
-  title: string
-  description?: string
-  createdAt: string
-
-  groupId: string          // which group this task belongs to
-  points: number;         // add this
-  completed: boolean;     // add this
-  assignedTo: User[]  // list of users
-  // scheduling info
-  dueDate: string          // ISO date of next due
-  frequency: 'once' | 'daily' | 'weekly' | 'monthly'
-  completedBy?: Completion []      // ISO date of when it was last completed
-}
-
-// record of a single completion
-
-export type Completion = {
-  id: string
-  taskId: string
-  userId: string
-  completedAt: string
-}
+  id: string;                // PK
+  title: string;             // títol de la tasca
+  description?: string | null;
+  created_at: string;        // data creació
+  created_by: string;        // FK cap a profiles.id
+  group_id: string;          // FK cap a groups.id
+  points: number;            // punts de la tasca
+  completed: boolean;        // estat
+  due_date?: string | null;  // data límit (ISO)
+};
 
 export type TaskAssignment = {
-  id: string
-  taskId: string
-  userId: string
-  assignedAt: string
-}   
+  id: string;                // PK
+  task_id: string;           // FK cap a tasks.id
+  user_id: string;           // FK cap a profiles.id
+  assigned_at: string;       // data assignació
+};
+
+export type Completion = {
+  id: string;                // PK
+  task_id: string;           // FK cap a tasks.id
+  user_id: string;           // FK cap a profiles.id
+  completed_at: string;      // data completada
+};
+
+// Alias per simplicitat en components on només es necessiten uns quants camps
+export type User = Pick<Profile, 'id' | 'full_name' | 'avatar_url'>;
