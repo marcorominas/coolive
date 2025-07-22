@@ -24,16 +24,21 @@ export type GroupMember = {
 };
 
 export type Task = {
-  id: string;                // PK
-  title: string;             // títol de la tasca
-  description?: string | null;
-  created_at: string;        // data creació
-  created_by: string;        // FK cap a profiles.id
-  group_id: string;          // FK cap a groups.id
-  points: number;            // punts de la tasca
-  completed: boolean;        // estat
-  dueDate?: string | null;  // data límit (ISO)
+  id: string;
+  title: string;
+  created_at: string;
+  created_by: string;
+  group_id: string;
+  points: number;
+  completed: boolean;
+  due_date: string | null;
+  assignedTo?: {
+    id: string;
+    full_name: string;
+    avatar_url: string | null;
+  }[];
 };
+
 
 export type TaskAssignment = {
   id: string;                // PK

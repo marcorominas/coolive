@@ -18,15 +18,24 @@ export default function ProtectedLayout() {
       name="profile-setup" 
       options={{ headerShown: false }} 
     />
-    <Stack.Screen 
-      name="new-task"  
-      options={{ 
+    <Stack.Screen
+      name="new-task"
+      options={{
         title: 'New Task',
         presentation: 'modal',
         animation: 'slide_from_bottom'
-      }} 
+       }}
     />
-  </Stack>
+    <Stack.Screen
+      name="edit-task"
+      options={{
+        title: 'Edit Task',
+        presentation: 'modal',
+        animation: 'slide_from_bottom'
+      }}
+  />
+    </Stack>
+
 );
 
 }

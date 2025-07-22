@@ -4,7 +4,6 @@ import TaskListItem from '@/components/TaskListItem';
 import type { Task, User, Completion } from '@/types';
 import { useAuth } from '@/providers/AuthProvider';
 import { supabase } from '@/lib/supabase';
-
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
