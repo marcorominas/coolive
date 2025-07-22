@@ -46,16 +46,15 @@ export default function JoinGroupScreen() {
 
       const groupId = group.id;
 
-      // Comprovar si l’usuari ja és membre
-      const { data: existing } = await supabase
+      // Comprovar si l’usuari ja pertany a algun grup
+      const { data: membership } = await supabase
         .from('group_members')
         .select('id')
-        .eq('group_id', groupId)
         .eq('user_id', user!.id)
         .maybeSingle();
 
-      if (existing) {
-        Alert.alert('Ja ets membre d’aquest grup.');
+      if (membership) {
+        Alert.alert('Ja formes part d\'un grup.');
         return;
       }
 

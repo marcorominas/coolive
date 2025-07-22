@@ -26,11 +26,24 @@ export default function CreateGroupScreen() {
     try {
       setLoading(true);
 
-      // Comprovar si ja existeix un grup amb aquest nom
-      const { data: existingGroup } = await supabase
-        .from('groups')
-        .select('id')
-        .eq('name', groupName.trim())
+      // Comprovar si l'usuari ja forma part d'algun grup
+        const { data: existingMembership } = await supabase
+          .from('group_members')
+          .select('group_id')
+          .eq('user_id', user!.id)
+          .maybeSingle();
+
+        if (existingMembership) {
+          Alert.alert('Ja formes part d\'un grup.');
+          setLoading(false);
+          return;
+        }
+
+        // Comprovar si ja existeix un grup amb aquest nom
+        const { data: existingGroup } = await supabase
+          .from('groups')
+          .select('id')
+          .eq('name', groupName.trim())
         .maybeSingle();
 
       if (existingGroup) {

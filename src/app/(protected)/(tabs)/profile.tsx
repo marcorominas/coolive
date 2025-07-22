@@ -1,5 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Image, ActivityIndicator, Alert, Pressable, FlatList } from 'react-native';
+import {
+  View,
+  Text,
+  Image,
+  ActivityIndicator,
+  Alert,
+  Pressable,
+  FlatList,
+} from 'react-native';
 import { useAuth } from '@/providers/AuthProvider';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'expo-router';
@@ -31,12 +39,11 @@ export default function ProfileScreen() {
   const [signingOut, setSigningOut] = useState(false);
   const [leavingGroup, setLeavingGroup] = useState(false);
 
-  // Llista i comptadors
   const [pendingTasks, setPendingTasks] = useState<number>(0);
-  const [membersCount, setMembersCount] = useState<number>(0);
-  const [membersList, setMembersList] = useState<{ id: string; full_name: string | null; avatar_url: string | null }[]>([]);
+  const [membersList, setMembersList] = useState<
+    { id: string; full_name: string; avatar_url: string }[]
+  >([]);
 
-  // Carrega dades del perfil de l'usuari
   useEffect(() => {
     if (!isAuthenticated) {
       router.replace('/login');
@@ -57,7 +64,6 @@ export default function ProfileScreen() {
     })();
   }, [user, isAuthenticated]);
 
-  // Carrega dades del grup i membres
   useEffect(() => {
     if (!currentGroupId) {
       setGroupData(null);
@@ -66,7 +72,6 @@ export default function ProfileScreen() {
     }
     setLoadingGroup(true);
     (async () => {
-      // Grup
       const { data } = await supabase
         .from('groups')
         .select('id, name, short_code')
@@ -74,25 +79,22 @@ export default function ProfileScreen() {
         .single();
       setGroupData(data || null);
 
-      // Membres amb JOIN a profiles
-      const { data: membersData, error: membersError } = await supabase
+      // Membres del grup amb join a profiles
+      const { data: membersData } = await supabase
         .from('group_members')
-        .select('user_id, profiles (id, full_name, avatar_url)')
+        .select('user_id, profiles(full_name, avatar_url)')
         .eq('group_id', currentGroupId);
 
-      if (membersError) console.error('Error carregant membres:', membersError);
-
       const formattedMembers =
-        membersData?.map((m: any) => ({
-          id: m.profiles?.id || m.user_id,
-          full_name: m.profiles?.full_name || 'Membre nou',
-          avatar_url: m.profiles?.avatar_url || getRandomAvatar(m.user_id),
-        })) ?? [];
-
-      setMembersCount(formattedMembers.length);
+        membersData
+          ?.map((m: any) => ({
+            id: m.user_id,
+            full_name: m.profiles?.full_name || 'Membre',
+            avatar_url: m.profiles?.avatar_url || getRandomAvatar(m.user_id),
+          }))
+          .sort((a, b) => a.full_name.localeCompare(b.full_name)) ?? [];
       setMembersList(formattedMembers);
 
-      // Tasques pendents
       const { count: tasks } = await supabase
         .from('tasks')
         .select('*', { count: 'exact', head: true })
@@ -138,7 +140,7 @@ export default function ProfileScreen() {
 
   return (
     <View className="flex-1 bg-beige">
-      {/* Header amb logout */}
+      {/* Header */}
       <View className="h-12 bg-beige flex-row justify-between items-center px-4">
         <Text className="text-lg font-heading font-bold text-brown">COOLIVE</Text>
         <Pressable onPress={handleSignOut} disabled={signingOut}>
@@ -182,22 +184,23 @@ export default function ProfileScreen() {
               <Text className="text-brown mb-2">
                 Codi per unir-te: {groupData.id.replace(/-/g, '').slice(0, 6)}
               </Text>
-              <Text className="text-brown text-sm mb-2">
-                Membres: {membersCount} | Tasques pendents: {pendingTasks}
+              <Text className="text-brown text-sm mb-3">
+                Membres: {membersList.length} | Tasques pendents: {pendingTasks}
               </Text>
 
               <FlatList
                 data={membersList}
                 keyExtractor={(item) => item.id}
                 horizontal
+                showsHorizontalScrollIndicator={false}
                 renderItem={({ item }) => (
                   <View className="items-center mr-3">
                     <Image
                       source={{ uri: item.avatar_url }}
                       className="w-10 h-10 rounded-full"
                     />
-                    <Text className="text-xs text-brown">
-                      {item.full_name?.slice(0, 8)}
+                    <Text className="text-xs text-brown text-center">
+                      {item.full_name.slice(0, 8)}
                     </Text>
                   </View>
                 )}

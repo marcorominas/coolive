@@ -18,10 +18,10 @@ import { GroupProvider } from "@/providers/GroupProvider";
 export default function RootLayout() {
   return (
       //<ThemeProvider value={myTheme}>
-      <GroupProvider>
-        <AuthProvider>
+      <AuthProvider>
+        <GroupProvider>
           <Slot />
-        </AuthProvider>
-      </GroupProvider>
+        </GroupProvider>
+      </AuthProvider>
   );
 }

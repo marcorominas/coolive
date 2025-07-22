@@ -32,7 +32,7 @@ export type Task = {
   group_id: string;          // FK cap a groups.id
   points: number;            // punts de la tasca
   completed: boolean;        // estat
-  due_date?: string | null;  // data límit (ISO)
+  dueDate?: string | null;  // data límit (ISO)
 };
 
 export type TaskAssignment = {

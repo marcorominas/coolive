@@ -17,12 +17,6 @@ import { useAuth } from '@/providers/AuthProvider';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useGroup } from '@/providers/GroupProvider';
 
-{/*const frequencyOptions = [
-  { key: 'once', label: 'Un cop' },
-  { key: 'daily', label: 'Diari' },
-  { key: 'weekly', label: 'Setmanal' },
-  { key: 'monthly', label: 'Mensual' },
-];/*/}
 
 export default function NewTaskScreen() {
   const router = useRouter();
@@ -231,36 +225,7 @@ export default function NewTaskScreen() {
               <Text className="text-xs text-gray-500">Format: AAAA-MM-DD</Text>
             </View>
 
-            {/* Freqüència 
-            <View className="mb-4">
-              <Text className="text-base font-medium mb-1 text-marro-fosc">
-                Freqüència
-              </Text>
-              <View className="flex-row gap-2">
-                {frequencyOptions.map(option => (
-                  <Pressable
-                    key={option.key}
-                    onPress={() => setFrequency(option.key)}
-                    className={`px-3 py-2 rounded-full border ${
-                      frequency === option.key
-                        ? 'bg-ocre border-ocre'
-                        : 'bg-blanc-pur border-ocre'
-                    }`}
-                  >
-                    <Text
-                      className={
-                        frequency === option.key
-                          ? 'text-blanc-pur font-semibold'
-                          : 'text-ocre'
-                      }
-                    >
-                      {option.label}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
-            </View>
-            */}
+            
             {/* Assignació d’usuari */}
             <View className="mb-4">
               <Text className="text-base font-medium mb-1 text-marro-fosc">
