@@ -49,17 +49,25 @@ function getWeekDates(offset: number) {
 
 function groupTasksByDay(tasks: Task[], weekOffset: number) {
   const weekDates = getWeekDates(weekOffset);
+  const weekDateStrings = weekDates.map((w) =>
+    w.date.toLocaleDateString("ca-ES")
+  );
 
   return weekDates
-    .map(({ dayName, date }) => ({
-      title: `${dayName} (${date.getDate()}/${date.getMonth() + 1})`,
-      data: tasks.filter(
-        (task) =>
-          new Date(task.due_date || "")
-            .toLocaleDateString("ca-ES", { weekday: "long" })
-            .toLowerCase() === dayName
-      ),
-    }))
+    .map(({ dayName, date }) => {
+      const dateString = date.toLocaleDateString("ca-ES");
+      return {
+        title: `${dayName} (${date.getDate()}/${date.getMonth() + 1})`,
+        data: tasks.filter(
+          (task) =>
+            task.due_date &&
+            weekDateStrings.includes(
+              new Date(task.due_date).toLocaleDateString("ca-ES")
+            ) &&
+            new Date(task.due_date).toLocaleDateString("ca-ES") === dateString
+        ),
+      };
+    })
     .filter((section) => section.data.length > 0);
 }
 
@@ -202,7 +210,7 @@ export default function TaskCalendar() {
         />
       </View>
 
-      <View className="flex-row justify-center mb-2  ">
+      <View className="flex-row justify-center mb-2">
         <Button
           title="Avui"
           onPress={() => setView("today")}
