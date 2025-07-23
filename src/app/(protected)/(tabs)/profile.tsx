@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   Alert,
   Pressable,
+  ScrollView,
   FlatList,
 } from 'react-native';
 import { useAuth } from '@/providers/AuthProvider';
@@ -139,7 +140,9 @@ export default function ProfileScreen() {
   };
 
   return (
+    <ScrollView className="flex-1 bg-beige">
     <View className="flex-1 bg-beige">
+
       {/* Header */}
       <View className="h-12 bg-beige flex-row justify-between items-center px-4">
         <Text className="text-lg font-heading font-bold text-brown">COOLIVE</Text>
@@ -167,7 +170,7 @@ export default function ProfileScreen() {
         <Text className="mt-4 font-heading text-2xl font-bold text-brown">
           {profileData?.full_name || 'Usuari sense nom'}
         </Text>
-        <Text className="mt-2 text-4xl font-heading text-orange">
+        <Text className="mt-2 text-3xl font-heading text-orange">
           {profileData?.points ?? 0} Punts
         </Text>
         <Text className="mt-1 text-brown font-sans italic">
@@ -238,5 +241,6 @@ export default function ProfileScreen() {
         </View>
       </View>
     </View>
+    </ScrollView>
   );
 }

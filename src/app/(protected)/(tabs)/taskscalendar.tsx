@@ -15,6 +15,7 @@ import { supabase } from "@/lib/supabase";
 import { useGroup } from "@/providers/GroupProvider";
 import { useAuth } from "@/providers/AuthProvider";
 import type { Task } from "@/types";
+import { FontAwesome5 } from "@expo/vector-icons";
 
 const weekDays = [
   "dilluns",
@@ -193,9 +194,7 @@ export default function TaskCalendar() {
   return (
     <SafeAreaView className="flex-1 bg-beige">
       <View className="px-6 pt-8 pb-4 flex-row items-center justify-between">
-        <Text className="text-xl text-brown font-heading font-bold">
-          Tasques
-        </Text>
+        <Text className="text-brown font-heading font-bold">Tasques</Text>
         <Button
           title="+ Nova Tasca"
           onPress={() => router.push(`/new-task?groupId=${groupId}`)}
@@ -203,7 +202,7 @@ export default function TaskCalendar() {
         />
       </View>
 
-      <View className="flex-row justify-center mb-2">
+      <View className="flex-row justify-center mb-2  ">
         <Button
           title="Avui"
           onPress={() => setView("today")}
@@ -219,7 +218,7 @@ export default function TaskCalendar() {
       {view === "week" && (
         <View className="flex-row justify-between px-6 mb-2 items-center">
           <Pressable onPress={() => setWeekOffset((prev) => prev - 1)}>
-            <Text className="text-orange font-bold text-lg">{"<"}</Text>
+            <FontAwesome5 name="arrow-left" size={30} color="orange" />
           </Pressable>
           <Text className="text-brown font-heading font-bold">
             {weekOffset === 0
@@ -229,7 +228,7 @@ export default function TaskCalendar() {
               : `${weekOffset} setm.`}
           </Text>
           <Pressable onPress={() => setWeekOffset((prev) => prev + 1)}>
-            <Text className="text-orange font-bold text-lg">{">"}</Text>
+            <FontAwesome5 name="arrow-right" size={30} color="orange" />
           </Pressable>
         </View>
       )}

@@ -16,7 +16,16 @@ module.exports = {
         sans: ['Inter', 'sans-serif'],
         // Font específica per a títols i headers
         heading: ['Poppins', 'sans-serif'],
-      },     
+      }, 
+      fontSize: {
+            base: ["18px", "26px"], // 
+            lg: ["20px", "28px"], // 
+            xl: ["24px", "32px"], // 
+            '2xl': ["30px", "38px"], // 
+            '3xl': ["36px", "44px"], // 
+            '4xl': ["48px", "56px"], // 
+            '5xl': ["60px", "68px"],
+      },    
     },
   },
   plugins: [],

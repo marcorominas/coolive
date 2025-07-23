@@ -2,9 +2,9 @@
 import { Tabs } from 'expo-router';
 import {FontAwesome5} from '@expo/vector-icons';
 
-
 export default function TabsLayout() {
     return (
+         
         <Tabs screenOptions={{ 
             tabBarShowLabel: false,
             // colors dels icons
