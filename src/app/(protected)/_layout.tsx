@@ -21,7 +21,7 @@ export default function ProtectedLayout() {
     <Stack.Screen
       name="new-task"
       options={{
-        title: 'New Task',
+        title: 'Nova Tasca',
         presentation: 'modal',
         animation: 'slide_from_bottom'
        }}
@@ -29,11 +29,28 @@ export default function ProtectedLayout() {
     <Stack.Screen
       name="edit-task"
       options={{
-        title: 'Edit Task',
+        title: 'Editar Tasca',
         presentation: 'modal',
         animation: 'slide_from_bottom'
       }}
-  />
+    />
+    <Stack.Screen 
+      name="create-group" 
+      options={{
+        title: 'Crear Grup',
+        presentation: 'modal',
+        animation: 'slide_from_bottom'
+      }}
+    />
+    <Stack.Screen 
+      name="join" 
+      options={{
+        title: 'Unir-se grup',
+        presentation: 'modal',
+        animation: 'slide_from_bottom'
+      }}
+    />
+
     </Stack>
 
 );

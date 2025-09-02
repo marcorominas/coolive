@@ -19,7 +19,7 @@ export default function TabsLayout() {
             <Tabs.Screen 
                 name='index' 
                 options={{ 
-                    title: 'Tasks', 
+                    title: 'Tasques', 
                     tabBarIcon: ({size, color}) => (
                         <FontAwesome5 name="home" size={size} color={color}/>
                     ),
@@ -29,7 +29,7 @@ export default function TabsLayout() {
             <Tabs.Screen 
                 name='taskscalendar' 
                 options={{ 
-                    title: 'Calendar',
+                    title: 'Calendari',
                     tabBarIcon: ({size, color}) => (
                         <FontAwesome5 name="tasks" size={size} color={color}/>
                     ),
@@ -47,7 +47,7 @@ export default function TabsLayout() {
             <Tabs.Screen 
                 name='profile' 
                 options={{ 
-                    title: 'Profile',
+                    title: 'Perfil',
                     tabBarIcon: ({size, color}) => (
                     <FontAwesome5 name="user" size={size} color={color}/>
                     ),

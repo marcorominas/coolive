@@ -13,7 +13,6 @@ import Button from "@/components/Button";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { supabase } from "@/lib/supabase";
 import { useGroup } from "@/providers/GroupProvider";
-import { useAuth } from "@/providers/AuthProvider";
 import type { Task } from "@/types";
 import { FontAwesome5 } from "@expo/vector-icons";
 
@@ -76,7 +75,6 @@ export default function TaskCalendar() {
   const { groupId: groupIdParam } =
     useLocalSearchParams<{ groupId?: string }>();
   const { currentGroupId } = useGroup();
-  const { user } = useAuth();
 
   const [groupId, setGroupId] = useState<string | undefined>(undefined);
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -255,7 +253,7 @@ export default function TaskCalendar() {
             <TaskListItem
               task={item}
               onToggleComplete={handleToggleComplete}
-              userId={item.assignedTo?.[0]?.id ?? user?.id}
+              userId={item.assignedTo?.[0]?.id}
             />
           )}
           ListEmptyComponent={() => (
@@ -279,7 +277,7 @@ export default function TaskCalendar() {
               <TaskListItem
                 task={item}
                 onToggleComplete={handleToggleComplete}
-                userId={item.assignedTo?.[0]?.id ?? user?.id}
+                userId={item.assignedTo?.[0]?.id}
               />
             </View>
           )}

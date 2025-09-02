@@ -239,7 +239,7 @@ export default function HomeScreen() {
                   <TaskListItem
                     task={item}
                     onToggleComplete={() => router.push("/taskscalendar")}
-                    userId={user?.id}
+                    userId={item.assignedTo?.[0]?.id}
                   />
                 </View>
               )}
