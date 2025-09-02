@@ -50,7 +50,7 @@ export default function PodiumScreen() {
     }
     setLoading(true);
 
-    // ✅ Rànquing bàsic
+    // Rànquing bàsic
     const { data, error } = await supabase
       .from("group_members")
       .select("user_id, profiles(id, full_name, avatar_url, points)")
@@ -64,7 +64,7 @@ export default function PodiumScreen() {
       return;
     }
 
-    // ✅ Comptar completions
+    // Comptar completions
     const userIds = data?.map((d: any) => d.user_id) ?? [];
     const { data: completionsData } = await supabase
       .from("completions")
@@ -88,7 +88,7 @@ export default function PodiumScreen() {
     parsed.sort((a, b) => b.points - a.points);
     setRanking(parsed);
 
-    // ✅ Historial (últimes 10 tasques)
+    // Historial (últimes 10 tasques)
     const { data: historyData } = await supabase
       .from("completions")
       .select("id, completed_at, profiles(full_name, avatar_url), tasks(title)")

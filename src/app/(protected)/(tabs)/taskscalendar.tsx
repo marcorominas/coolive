@@ -147,26 +147,28 @@ export default function TaskCalendar() {
     fetchTasks();
   }, [groupId]);
 
-  const handleToggleComplete = async (task: Task) => {
-    if (!user?.id) return;
+ const handleToggleComplete = async (task: Task, userId?: string) => {
+    const targetUserId = userId ?? task.assignedTo?.[0]?.id;
+    if (!targetUserId) return;
+    
 
     const { data: profile } = await supabase
       .from("profiles")
       .select("points")
-      .eq("id", user.id)
+      .eq("id", targetUserId)
       .single();
     const puntsActuals = profile?.points ?? 0;
 
     await supabase.from("completions").insert({
       task_id: task.id,
-      user_id: user.id,
+      user_id: targetUserId,
       completed_at: new Date().toISOString(),
     });
 
     await supabase
       .from("profiles")
       .update({ points: puntsActuals + task.points })
-      .eq("id", user.id);
+      .eq("id", targetUserId);
 
     setTasks((prev) =>
       prev.map((t) =>
@@ -253,7 +255,7 @@ export default function TaskCalendar() {
             <TaskListItem
               task={item}
               onToggleComplete={handleToggleComplete}
-              userId={user?.id}
+              userId={item.assignedTo?.[0]?.id ?? user?.id}
             />
           )}
           ListEmptyComponent={() => (
@@ -277,7 +279,7 @@ export default function TaskCalendar() {
               <TaskListItem
                 task={item}
                 onToggleComplete={handleToggleComplete}
-                userId={user?.id}
+                userId={item.assignedTo?.[0]?.id ?? user?.id}
               />
             </View>
           )}

@@ -6,11 +6,11 @@ import type { Task } from "@/types";
 
 type Props = {
   task: Task;
-  onToggleComplete: (task: Task) => void;
+  onToggleComplete: (task: Task, userId?: string) => void;
   userId?: string;
 };
 
-export default function TaskListItem({ task, onToggleComplete }: Props) {
+export default function TaskListItem({ task, onToggleComplete, userId }: Props) {
   const router = useRouter();
   const isCompleted = task.completed;
 
@@ -33,12 +33,12 @@ export default function TaskListItem({ task, onToggleComplete }: Props) {
       "
       android_ripple={{ color: "#f3e9d2" }}
     >
-      {/* ✅ Esquerra: check + info tasca */}
+      {/*  Esquerra: check + info tasca */}
       <View className="flex-row items-center flex-1">
         <Pressable
           onPress={(e) => {
-            e.stopPropagation(); // ✅ Evitem que es dispari la navegació en clicar el check
-            onToggleComplete(task);
+            e.stopPropagation(); // Evitem que es dispari la navegació en clicar el check
+            onToggleComplete(task, userId ?? task.assignedTo?.[0]?.id);
           }}
           className="mr-3"
           android_ripple={{ color: "#eab308" }}
